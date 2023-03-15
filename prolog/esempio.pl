@@ -14,7 +14,7 @@ on(e, table).
 
 z(Block, 0) :-
     on(Block, table).
-    Coordinate is 1
+    Coordinate is 1.
 
 z(Block, Z) :-
     on(Block, Block1),
