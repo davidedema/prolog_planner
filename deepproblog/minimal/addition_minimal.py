@@ -15,7 +15,7 @@ net = Network(network, "mnist_net", batching=True)
 # Imposta ottimizzatore per il modello
 net.optimizer = torch.optim.Adam(network.parameters(), lr=1e-3)
 # Crea il modello che contiene la logica e il modello di rete neurale
-model = Model("/home/davide/Scrivania/progetto_tesi/minimal/addition.pl", [net])
+model = Model("/home/davide/Scrivania/progetto_tesi/deepproblog/minimal/addition.pl", [net])
 # Imposta il motore di inferenza
 model.set_engine(ExactEngine(model))
 # Aggiunge i tensori di input con i dati sia train che test
@@ -27,9 +27,9 @@ dataset = AdditionDataset("test")
 
 # Train the model
 # Crea il dataloader con il dataset e il batch size di 2 e senza shuffle
-loader = DataLoader(dataset, 2, False)
+loader = DataLoader(dataset, 32, False)
 # Esegue il training del modello 
-# train_model(model, loader, 1, log_iter=100, profile=0)
+# train_model(model, loader, 10, log_iter=20, profile=0)
 # Salva lo stato del modello
 # model.save_state("snapshot/trained_model.pth")
 
