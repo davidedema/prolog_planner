@@ -1,7 +1,3 @@
-% TODO:  aggiungere posizione blocco, rotazione e spostamento
-%       rendere la cosa più dichiarativa
-%       e ci siamo quasi 
-
 % Fatti
 blocco(b1, x(1), y(0), z(0), larghezza(1), altezza(2), profondita(1), orientamento(verticale)).
 blocco(b2, x(1), y(1), z(0), larghezza(1), altezza(2), profondita(1), orientamento(laterale)).
