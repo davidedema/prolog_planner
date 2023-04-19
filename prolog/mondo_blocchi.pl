@@ -18,14 +18,14 @@ impilabile(Blocco) :-
     ruota_blocco(Blocco, 90).
 
 ruota_blocco(Blocco, Angolo) :-
-    writeln('-----Ruotando blocco...-----'),
-    format('Blocco ~w ruotato di ~d gradi, ora è in orientamento verticale ~n', [Blocco,Angolo]).
+    writeln('-----Ruotare Blocco-----'),
+    format('Blocco ~w deve essere ruotato di ~d gradi ~n', [Blocco,Angolo]).
 
 muovi_blocco(Blocco, X, Y, Z) :-
     blocco(Blocco, x(X1), y(Y1), z(Z1), larghezza(L1), altezza(H1), profondita(P1), orientamento(P1X)),
-    writeln('-----Spostando blocco...-----'),
+    writeln('-----Spostare blocco...-----'),
     format('Blocco ~w si trovava in x:~d y:~d z:~d ~n',[Blocco, X1, Y1, Z1]),
-    format('Ora si trova in x:~d y:~d z:~d ~n', [X, Y, Z]).
+    format('Bisogna muoverlo in in x:~d y:~d z:~d ~n', [X, Y, Z]).
 
 all_diff(L) :-
     \+ (select(X,L,R), memberchk(X,R)).
@@ -39,11 +39,11 @@ pilastro(B1, B2) :-
     % controllo compatibilità dimensione blocchi
     L1 = L2,
     P1 = P2,
-    % controllo che i blocchi siano in posizione corretta
-    ((X1 \= X2; Y1 \= Y2) -> muovi_blocco(B2, X1, Y1, (Z1+H1));muovi_blocco(B2, X2, Y2, Z1+H1)),
     % controllo che i blocchi siano impilabili
     impilabile(B1),
     impilabile(B2),
+    % controllo che i blocchi siano in posizione corretta
+    ((X1 \= X2; Y1 \= Y2) -> muovi_blocco(B2, X1, Y1, (Z1+H1));muovi_blocco(B2, X2, Y2, Z1+H1)),
     NZ2 is Z1 + H1,
     AltezzaP is H1 + H2,
     writeln('-----Creazione pilastro...-----'),
