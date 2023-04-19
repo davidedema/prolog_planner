@@ -1,3 +1,5 @@
+% TODO: VEDERE SE SI PUÒ APPLICCARE IL CONCETTO A ALTRE REGOLE
+
 % Fatti
 blocco(b1, x(1), y(0), z(0), larghezza(1), altezza(2), profondita(1), orientamento(verticale)).
 blocco(b2, x(1), y(1), z(0), larghezza(1), altezza(2), profondita(1), orientamento(laterale)).
@@ -25,12 +27,15 @@ muovi_blocco(Blocco, X, Y, Z) :-
     format('Blocco ~w si trovava in x:~d y:~d z:~d ~n',[Blocco, X1, Y1, Z1]),
     format('Ora si trova in x:~d y:~d z:~d ~n', [X, Y, Z]).
 
+all_diff(L) :-
+    \+ (select(X,L,R), memberchk(X,R)).
+
 pilastro(B1, B2) :-
     % blocchi
     blocco(B1, x(X1), y(Y1), z(Z1), larghezza(L1), altezza(H1), profondita(P1), orientamento(P1X)),
     blocco(B2, x(X2), y(Y2), z(Z2), larghezza(L2), altezza(H2), profondita(P2), orientamento(P2X)),
     % controllo che i blocchi siano diversi
-    B1 \= B2,
+    all_diff([B1, B2]),
     % controllo compatibilità dimensione blocchi
     L1 = L2,
     P1 = P2,
@@ -52,9 +57,7 @@ porta(B1, B2, B3) :-
     blocco(B2, x(X2), y(Y2), z(Z2), larghezza(L2), altezza(H2), profondita(P2), orientamento(P2X)),
     blocco(B3, x(X3), y(Y3), z(Z3), larghezza(L3), altezza(H3), profondita(P3), orientamento(P3X)),
     % controllo che i blocchi siano diversi
-    B1 \= B2,
-    B1 \= B3,
-    B2 \= B3,
+    all_diff([B1, B2, B3]),
     % controllo compatibilità dimensione blocchi
     L1 = L2,
     P1 = P2,
@@ -83,16 +86,7 @@ tavolo(B1, B2, B3, B4, B5) :-
     blocco(B4, x(X4), y(Y4), z(Z4), larghezza(L4), altezza(H4), profondita(P4), orientamento(P4X)),
     blocco(B5, x(X5), y(Y5), z(Z5), larghezza(L5), altezza(H5), profondita(P5), orientamento(P5X)),
     % controllo che i blocchi siano diversi
-    B1 \= B2,
-    B1 \= B3,
-    B1 \= B4,
-    B1 \= B5,
-    B2 \= B3,
-    B2 \= B4,
-    B2 \= B5,
-    B3 \= B4,
-    B3 \= B5,
-    B4 \= B5,
+    all_diff([B1, B2, B3, B4, B5]),
     % controllo che i blocchi siano impilabili
     impilabile(B1),
     impilabile(B2),
