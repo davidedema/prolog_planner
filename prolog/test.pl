@@ -1,19 +1,39 @@
+:- dynamic blocco/8.
+
+% PER ORIENTAMENTO INDICHIAMO LA FACCIA SU CUI SI APPOGGIA IL BLOCCO
+% 1 = fondo
+% 2 = sopra
+% 3 = lato
+% 4 = lato 
+% 5 = lato
+% 6 = lato 
+
 % Fatti
-blocco(b1, x(1), y(0), z(0), larghezza(1), altezza(2), profondita(1), orientamento(verticale)).
-blocco(b2, x(1), y(1), z(0), larghezza(1), altezza(2), profondita(1), orientamento(laterale)).
-blocco(b3, x(2), y(0), z(0), larghezza(1), altezza(2), profondita(1), orientamento(verticale)).
-blocco(b4, x(0), y(3), z(0), larghezza(1), altezza(2), profondita(1), orientamento(verticale)).
-blocco(b5, x(0), y(0), z(0), larghezza(4), altezza(1), profondita(4), orientamento(verticale)).
+blocco(b1, x(1), y(0), z(0), larghezza(1), altezza(2), profondita(1), orientamento(1), contatto(tavolo), shape(blocco)).
+blocco(b2, x(1), y(1), z(0), larghezza(1), altezza(2), profondita(1), orientamento(3), contatto(tavolo), shape(blocco)).
+blocco(b3, x(2), y(0), z(0), larghezza(1), altezza(2), profondita(1), orientamento(1), contatto(tavolo), shape(blocco)).
+blocco(b4, x(0), y(3), z(0), larghezza(1), altezza(2), profondita(1), orientamento(1), contatto(tavolo), shape(blocco)).
+blocco(b5, x(0), y(0), z(0), larghezza(4), altezza(1), profondita(4), orientamento(1), contatto(tavolo), shape(blocco)).
 
 % Regole
-
+% print blocco
+print_blocco(Blocco) :-
+    blocco(Blocco, x(X), y(Y), z(Z), larghezza(L), altezza(H), profondita(P), orientamento(O), contatto(C), shape(S)),
+    format('Blocco ~w: ~n', [Blocco]),
+    format('x: ~d y: ~d z: ~d ~n', [X, Y, Z]),
+    format('Larghezza: ~d Altezza: ~d Profondità: ~d ~n', [L, H, P]),
+    format('Orientamento: ~d ~n', [O]),
+    format('Contatto: ~w ~n', [C]),
+    format('Shape: ~w ~n', [S]).
 % un blocco è impilabile se in orientamento verticale
 impilabile(Blocco) :-
-    blocco(Blocco, _, _, _, _, _, _, orientamento(verticale)).
+    blocco(Blocco, _, _, _, _, _, _, orientamento(1), _, _).
 
 impilabile(Blocco) :-
-    blocco(Blocco, _, _, _, _, _, _, orientamento(laterale)),
-    ruota_blocco(Blocco, 90).
+    blocco(Blocco, x(X1), y(Y1), z(Z1), larghezza(L1), altezza(H1), profondita(P1), orientamento(3), contatto(C1), shape(S1)),
+    ruota_blocco(Blocco, 90),
+    retract(blocco(Blocco, x(X1), y(Y1), z(Z1), larghezza(L1), altezza(H1), profondita(P1), orientamento(3), contatto(C1), shape(S1))),
+    assert(blocco(Blocco, x(X1), y(Y1), z(Z1), larghezza(L1), altezza(H1), profondita(P1), orientamento(1), contatto(C1), shape(S1))).
 
 ruota_blocco(Blocco, Angolo) :-
     writeln('-----Ruotare Blocco-----'),
