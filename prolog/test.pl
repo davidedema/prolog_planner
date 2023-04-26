@@ -1,4 +1,4 @@
-:- dynamic blocco/8.
+:- dynamic blocco/11.
 
 % PER ORIENTAMENTO INDICHIAMO LA FACCIA SU CUI SI APPOGGIA IL BLOCCO
 % 1 = fondo
@@ -9,41 +9,47 @@
 % 6 = lato 
 
 % Fatti
-blocco(b1, x(1), y(0), z(0), larghezza(1), altezza(2), profondita(1), orientamento(1), contatto(tavolo), shape(blocco)).
-blocco(b2, x(1), y(1), z(0), larghezza(1), altezza(2), profondita(1), orientamento(3), contatto(tavolo), shape(blocco)).
-blocco(b3, x(2), y(0), z(0), larghezza(1), altezza(2), profondita(1), orientamento(1), contatto(tavolo), shape(blocco)).
-blocco(b4, x(0), y(3), z(0), larghezza(1), altezza(2), profondita(1), orientamento(1), contatto(tavolo), shape(blocco)).
-blocco(b5, x(0), y(0), z(0), larghezza(4), altezza(1), profondita(4), orientamento(1), contatto(tavolo), shape(blocco)).
+blocco(b1, x(1), y(0), z(0), larghezza(1), altezza(2), profondita(1), orientamento(1), contattob(tavolo), contattot(aria), shape(blocco)).
+blocco(b2, x(1), y(1), z(0), larghezza(1), altezza(2), profondita(1), orientamento(3), contattob(tavolo), contattot(aria), shape(blocco)).
+blocco(b3, x(2), y(0), z(0), larghezza(1), altezza(2), profondita(1), orientamento(1), contattob(tavolo), contattot(aria), shape(blocco)).
+blocco(b4, x(0), y(3), z(0), larghezza(1), altezza(2), profondita(1), orientamento(1), contattob(tavolo), contattot(aria), shape(blocco)).
+blocco(b5, x(0), y(0), z(0), larghezza(4), altezza(1), profondita(4), orientamento(1), contattob(tavolo), contattot(aria), shape(blocco)).
 
 % Regole
 % print blocco
 print_blocco(Blocco) :-
-    blocco(Blocco, x(X), y(Y), z(Z), larghezza(L), altezza(H), profondita(P), orientamento(O), contatto(C), shape(S)),
+    blocco(Blocco, x(X), y(Y), z(Z), larghezza(L), altezza(H), profondita(P), orientamento(O), contattob(CB), contattot(CT), shape(S)),
     format('Blocco ~w: ~n', [Blocco]),
     format('x: ~d y: ~d z: ~d ~n', [X, Y, Z]),
     format('Larghezza: ~d Altezza: ~d Profondità: ~d ~n', [L, H, P]),
     format('Orientamento: ~d ~n', [O]),
-    format('Contatto: ~w ~n', [C]),
+    format('Contatto Basso: ~w Contatto Alto: ~w ~n', [CB, CT]),
     format('Shape: ~w ~n', [S]).
+
 % un blocco è impilabile se in orientamento verticale
+% 
 impilabile(Blocco) :-
-    blocco(Blocco, _, _, _, _, _, _, orientamento(1), _, _).
+    blocco(Blocco, _, _, _, _, _, _, orientamento(1), _, _, _).
 
 impilabile(Blocco) :-
-    blocco(Blocco, x(X1), y(Y1), z(Z1), larghezza(L1), altezza(H1), profondita(P1), orientamento(3), contatto(C1), shape(S1)),
+    blocco(Blocco, x(X), y(Y), z(Z), larghezza(L), altezza(H), profondita(P), orientamento(O), contattob(CB), contattot(CT), shape(S)),
+    (O is 3; O is 4; O is 5; O is 6),
     ruota_blocco(Blocco, 90),
-    retract(blocco(Blocco, x(X1), y(Y1), z(Z1), larghezza(L1), altezza(H1), profondita(P1), orientamento(3), contatto(C1), shape(S1))),
-    assert(blocco(Blocco, x(X1), y(Y1), z(Z1), larghezza(L1), altezza(H1), profondita(P1), orientamento(1), contatto(C1), shape(S1))).
+    retract(blocco(Blocco, x(X), y(Y), z(Z), larghezza(L), altezza(H), profondita(P), orientamento(O), contattob(CB), contattot(CT), shape(S))),
+    assertz(blocco(Blocco, x(X), y(Y), z(Z), larghezza(L), altezza(H), profondita(P), orientamento(1), contattob(CB), contattot(CT), shape(S))).
 
 ruota_blocco(Blocco, Angolo) :-
     writeln('-----Ruotare Blocco-----'),
     format('Blocco ~w deve essere ruotato di ~d gradi ~n', [Blocco,Angolo]).
 
 muovi_blocco(Blocco, X, Y, Z) :-
-    blocco(Blocco, x(X1), y(Y1), z(Z1), larghezza(L1), altezza(H1), profondita(P1), orientamento(P1X)),
+    blocco(Blocco, x(X1), y(Y1), z(Z1), larghezza(L), altezza(H), profondita(P), orientamento(O), contattob(CB), contattot(CT), shape(S)),
     writeln('-----Spostare blocco...-----'),
     format('Blocco ~w si trovava in x:~d y:~d z:~d ~n',[Blocco, X1, Y1, Z1]),
-    format('Bisogna muoverlo in in x:~d y:~d z:~d ~n', [X, Y, Z]).
+    format('Bisogna muoverlo in in x:~d y:~d z:~d ~n', [X, Y, Z]),
+    retract(blocco(Blocco, x(X1), y(Y1), z(Z1), larghezza(L), altezza(H), profondita(P), orientamento(O), contattob(CB), contattot(CT), shape(S))),
+    assertz(blocco(Blocco, x(X), y(Y), z(Z), larghezza(L), altezza(H), profondita(P), orientamento(O), contattob(CB), contattot(CT), shape(S))).
+    
 
 all_diff(L) :-
     \+ (select(X,L,R), memberchk(X,R)).
