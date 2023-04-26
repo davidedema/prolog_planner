@@ -56,8 +56,8 @@ all_diff(L) :-
 
 pilastro(B1, B2) :-
     % blocchi
-    blocco(B1, x(X1), y(Y1), z(Z1), larghezza(L1), altezza(H1), profondita(P1), orientamento(P1X)),
-    blocco(B2, x(X2), y(Y2), z(Z2), larghezza(L2), altezza(H2), profondita(P2), orientamento(P2X)),
+    blocco(B1, x(X1), y(Y1), z(Z1), larghezza(L1), altezza(H1), profondita(P1), orientamento(O1), contattob(CB1), contattot(CT1), shape(S1)),
+    blocco(B2, x(X2), y(Y2), z(Z2), larghezza(L2), altezza(H2), profondita(P2), orientamento(O2), contattob(CB2), contattot(CT2), shape(S2)),
     % controllo che i blocchi siano diversi
     all_diff([B1, B2]),
     % controllo compatibilità dimensione blocchi
