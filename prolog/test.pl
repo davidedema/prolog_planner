@@ -9,21 +9,21 @@
 % 6 = lato 
 
 % Fatti
-blocco(b1, x(1), y(0), z(0), larghezza(1), altezza(2), profondita(1), orientamento(1), contattob(tavolo), contattot(aria), shape(blocco)).
-blocco(b2, x(1), y(1), z(0), larghezza(1), altezza(2), profondita(1), orientamento(3), contattob(tavolo), contattot(aria), shape(blocco)).
-blocco(b3, x(2), y(0), z(0), larghezza(1), altezza(2), profondita(1), orientamento(1), contattob(tavolo), contattot(aria), shape(blocco)).
-blocco(b4, x(0), y(3), z(0), larghezza(1), altezza(2), profondita(1), orientamento(1), contattob(tavolo), contattot(aria), shape(blocco)).
-blocco(b5, x(0), y(0), z(0), larghezza(4), altezza(1), profondita(4), orientamento(1), contattob(tavolo), contattot(aria), shape(blocco)).
+blocco(b1, x(1), y(0), z(0), larghezza(1), altezza(2), profondita(1), orientamento(1), contattol(tavolo), contattoh(aria), shape(cubo)).
+blocco(b2, x(1), y(1), z(0), larghezza(1), altezza(2), profondita(1), orientamento(3), contattol(tavolo), contattoh(aria), shape(cubo)).
+blocco(b3, x(2), y(0), z(0), larghezza(1), altezza(2), profondita(1), orientamento(1), contattol(tavolo), contattoh(aria), shape(cubo)).
+blocco(b4, x(0), y(3), z(0), larghezza(1), altezza(2), profondita(1), orientamento(1), contattol(tavolo), contattoh(aria), shape(cubo)).
+blocco(b5, x(0), y(0), z(0), larghezza(4), altezza(1), profondita(4), orientamento(1), contattol(tavolo), contattoh(aria), shape(cubo)).
 
 % Regole
 % print blocco
 print_blocco(Blocco) :-
-    blocco(Blocco, x(X), y(Y), z(Z), larghezza(L), altezza(H), profondita(P), orientamento(O), contattob(CB), contattot(CT), shape(S)),
+    blocco(Blocco, x(X), y(Y), z(Z), larghezza(L), altezza(H), profondita(P), orientamento(O), contattol(CL), contattoh(CH), shape(S)),
     format('Blocco ~w: ~n', [Blocco]),
     format('x: ~d y: ~d z: ~d ~n', [X, Y, Z]),
     format('Larghezza: ~d Altezza: ~d Profondità: ~d ~n', [L, H, P]),
     format('Orientamento: ~d ~n', [O]),
-    format('Contatto Basso: ~w Contatto Alto: ~w ~n', [CB, CT]),
+    format('Contatto Basso: ~w Contatto Alto: ~w ~n', [CL, CH]),
     format('Shape: ~w ~n', [S]).
 
 % un blocco è impilabile se in orientamento verticale
@@ -32,41 +32,49 @@ impilabile(Blocco) :-
     blocco(Blocco, _, _, _, _, _, _, orientamento(1), _, _, _).
 
 impilabile(Blocco) :-
-    blocco(Blocco, x(X), y(Y), z(Z), larghezza(L), altezza(H), profondita(P), orientamento(O), contattob(CB), contattot(CT), shape(S)),
+    blocco(Blocco, x(X), y(Y), z(Z), larghezza(L), altezza(H), profondita(P), orientamento(O), contattol(CL), contattoh(CH), shape(S)),
     (O is 3; O is 4; O is 5; O is 6),
     ruota_blocco(Blocco, 90),
-    retract(blocco(Blocco, x(X), y(Y), z(Z), larghezza(L), altezza(H), profondita(P), orientamento(O), contattob(CB), contattot(CT), shape(S))),
-    assertz(blocco(Blocco, x(X), y(Y), z(Z), larghezza(L), altezza(H), profondita(P), orientamento(1), contattob(CB), contattot(CT), shape(S))).
+    retract(blocco(Blocco, x(X), y(Y), z(Z), larghezza(L), altezza(H), profondita(P), orientamento(O), contattol(CL), contattoh(CH), shape(S))),
+    assertz(blocco(Blocco, x(X), y(Y), z(Z), larghezza(L), altezza(H), profondita(P), orientamento(1), contattol(CL), contattoh(CH), shape(S))).
 
 ruota_blocco(Blocco, Angolo) :-
     writeln('-----Ruotare Blocco-----'),
     format('Blocco ~w deve essere ruotato di ~d gradi ~n', [Blocco,Angolo]).
 
 muovi_blocco(Blocco, X, Y, Z) :-
-    blocco(Blocco, x(X1), y(Y1), z(Z1), larghezza(L), altezza(H), profondita(P), orientamento(O), contattob(CB), contattot(CT), shape(S)),
+    blocco(Blocco, x(X1), y(Y1), z(Z1), larghezza(L), altezza(H), profondita(P), orientamento(O), contattol(CL), contattoh(CH), shape(S)),
     writeln('-----Spostare blocco...-----'),
     format('Blocco ~w si trovava in x:~d y:~d z:~d ~n',[Blocco, X1, Y1, Z1]),
     format('Bisogna muoverlo in in x:~d y:~d z:~d ~n', [X, Y, Z]),
-    retract(blocco(Blocco, x(X1), y(Y1), z(Z1), larghezza(L), altezza(H), profondita(P), orientamento(O), contattob(CB), contattot(CT), shape(S))),
-    assertz(blocco(Blocco, x(X), y(Y), z(Z), larghezza(L), altezza(H), profondita(P), orientamento(O), contattob(CB), contattot(CT), shape(S))).
+    retract(blocco(Blocco, x(X1), y(Y1), z(Z1), larghezza(L), altezza(H), profondita(P), orientamento(O), contattol(CL), contattoh(CH), shape(S))),
+    assertz(blocco(Blocco, x(X), y(Y), z(Z), larghezza(L), altezza(H), profondita(P), orientamento(O), contattol(CL), contattoh(CH), shape(S))).
     
 
 all_diff(L) :-
-    \+ (select(X,L,R), memberchk(X,R)).
+    \+ (seleCH(X,L,R), memberchk(X,R)).
 
+
+% B1 sotto B2 sopra
 pilastro(B1, B2) :-
     % blocchi
-    blocco(B1, x(X1), y(Y1), z(Z1), larghezza(L1), altezza(H1), profondita(P1), orientamento(O1), contattob(CB1), contattot(CT1), shape(S1)),
-    blocco(B2, x(X2), y(Y2), z(Z2), larghezza(L2), altezza(H2), profondita(P2), orientamento(O2), contattob(CB2), contattot(CT2), shape(S2)),
+    blocco(B1, x(X1), y(Y1), z(Z1), larghezza(L1), altezza(H1), profondita(P1), orientamento(O1), contattol(CL1), contattoh(CH1), shape(S1)),
+    blocco(B2, x(X2), y(Y2), z(Z2), larghezza(L2), altezza(H2), profondita(P2), orientamento(O2), contattol(CL2), contattoh(CH2), shape(S2)),
+    % PRECONDIZIONI
     % controllo che i blocchi siano diversi
     all_diff([B1, B2]),
     % controllo compatibilità dimensione blocchi
     L1 = L2,
     P1 = P2,
+    CL2 = 'tavolo',
+    CH1 = 'aria',
+    (S1 = 'cubo' ; S1 = 'parallelepipedo'),
+    (S2 = 'cubo' ; S2 = 'parallelepipedo'),
     % controllo che i blocchi siano impilabili
     impilabile(B1),
     impilabile(B2),
     % controllo che i blocchi siano in posizione corretta
+    % POSTCONDIZIONI
     ((X1 \= X2; Y1 \= Y2) -> muovi_blocco(B2, X1, Y1, (Z1+H1));muovi_blocco(B2, X2, Y2, Z1+H1)),
     NZ2 is Z1 + H1,
     AltezzaP is H1 + H2,
