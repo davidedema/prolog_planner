@@ -10,6 +10,10 @@ on(c, table).
 on(d, table).
 on(e, table).
 
+
+all_diff(L) :-
+    (select(X,L,R), print(X), print(R), print(L)).
+
 % trovare z blocco in ricorsiva
 
 z(Block, 0) :-
