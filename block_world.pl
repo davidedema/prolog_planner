@@ -2,7 +2,7 @@
 :- dynamic count/2.
 :- use_module(library(clpfd)).    % for CLP
 
-% todo: Creare regola per eseguire creazione pilastro
+% todo: Creare regola per eseguire creazione pilastro -> forse fatta ma meglio capire se va fatta così
 
 %%%%% FACTS %%%%%
 
@@ -42,10 +42,6 @@ list_length([], 0).
 list_length([_|T], N) :-
     list_length(T, N1),
     N is N1 + 1.
-
-prova(L) :-
-    list_length(L, N),
-    writeln(N).
 
 %%% FOR RECURSIVE ROTATION %%%
 
@@ -105,11 +101,11 @@ link(B1, B2) :-
     count(s, N),
     %% PRECONDITIONS %%
     all_diff([B1, B2]),
+    L1 = 0,
+    L2 = 0,
     X1 = X2,
     Y1 = Y2,
     Z1 is Z2 + H2,
-    TL1 = 'table',
-    TH2 = 'air',
     W1 = W2,
     D1 = D2,
     %% POSTCONDITIONS %%
@@ -126,4 +122,18 @@ link(B1, B2) :-
     assertz(block(STACK, X2, Y2, Z2, W1, HighP, D1, 1, TL2, TH1, block, [B1,B2],0)).
     
 
-
+stack(B1, B2, X, Y, Z) :-
+    block(B1, X1, Y1, Z1, W1, H1, D1, O1, TL1, TH1, S1, MB1, L1),
+    block(B2, X2, Y2, Z2, W2, H2, D2, O2, TL2, TH2, S2, MB2, L2),
+    %% PRECONDITIONS %%
+    all_diff([B1, B2]),
+    W1 = W2,
+    D1 = D2,
+    TL1 = 'table',
+    TH2 = 'air',
+    NZ is Z + H2,
+    (\+ O1 = 1 -> rotate_block(B1, X1, Y1, Z1, 1); true),
+    (\+ O2 = 1 -> rotate_block(B2, X2, Y2, Z2, 1); true),
+    move_block(B2, X2, Y2, Z2, X, Y, Z),
+    move_block(B1, X1, Y1, Z1, X, Y, NZ),
+    link(B1, B2).
