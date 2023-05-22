@@ -7,11 +7,10 @@
 
 % block(ID, X, Y, Z, width, depth, height, orientation, touchL, touchH, shape, made by, linked)
 block(b1, 1, 0, 0, 1, 2, 1, 1, table, air, block, [b1], 0).
-block(b2, 1, 1, 0, 1, 2, 1, 3, table, air, block, [b2], 0).
+block(b2, 1, 0, 1, 1, 2, 1, 3, table, air, block, [b2], 0).
 block(b3, 2, 0, 0, 1, 2, 1, 1, table, air, block, [b3], 0).
 block(b4, 0, 3, 0, 1, 2, 1, 1, table, air, block, [b4], 0).
 block(b5, 0, 0, 0, 4, 1, 4, 1, table, air, block, [b5], 0).
-block(test, 0, 0, 0, 1, 1, 1, 1, table, air, block, [b1,b2], 0).
 
 % count(ID, Counter)
 count(s,1).
@@ -22,7 +21,7 @@ count(s,1).
 
 print_block(Block) :- 
     block(Block, X, Y, Z, W, D, H, O, TL, TH, S, MB, L),
-    format('Blocco ~w:~n', [Block]),
+    format('Block; ~w:~n', [Block]),
     format('Coordinate: ~w, ~w, ~w~n', [X, Y, Z]),
     format('Dimensions: ~w, ~w, ~w~n', [W, D, H]),
     format('Orientation: ~w~n', [O]),
@@ -60,7 +59,9 @@ rotate_list([H|T], NO) :-
 move_list([], NX, NY, NZ).
 
 move_list([H|T], NX, NY, NZ) :-
-    move_block(H, _, _, _, NX, NY, NZ),
+    block(H, X, Y, Z, W, H1, D, O, TL, TH, S, MB, L),
+    Z1 is NZ+Z,
+    move_block(H, X, Y, Z, NX, NY, Z1),
     move_list(T, NX, NY, NZ).
 
 %%% ACTIONS %%%
@@ -93,12 +94,13 @@ link(B1, B2) :-
     all_diff([B1, B2]),
     X1 = X2,
     Y1 = Y2,
-    Z1 = Z2 + H2,
-    TL1 = 'table'
+    Z1 is Z2 + H2,
+    TL1 = 'table',
     TH2 = 'air',
     W1 = W2,
     D1 = D2,
     %% POSTCONDITIONS %%
+    HighP is H1 + H2,
     retract(block(B1, X1, Y1, Z1, W1, H1, D1, O1, TL1, TH1, S1, MB1, L1)),
     retract(block(B2, X2, Y2, Z2, W2, H2, D2, O2, TL2, TH2, S2, MB2, L2)),
     assertz(block(B1, X1, Y1, Z1, W1, H1, D1, O1, B2, TH1, S1, MB1, 0)),
@@ -107,7 +109,8 @@ link(B1, B2) :-
     retract(count(s, N)),
     N1 is N+1,
     assertz(count(s, N1)),
-    assertz(block(PIL, X1, Y1, Z1, W1, HighP, D1, 1, TL1, TH2, block, [B1,B2])).
+    atom_string(STACK,PIL),
+    assertz(block(STACK, X2, Y2, Z2, W1, HighP, D1, 1, TL2, TH1, block, [B1,B2],0)).
     
 
 
