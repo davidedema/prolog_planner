@@ -1,12 +1,14 @@
 :- dynamic block/13.
 :- dynamic count/2.
-:- use_module(library(clpfd)).    % for CLP
+:- use_module(library(clpr)).    % for CLP
 
-% todo: Creare regola per eseguire creazione pilastro -> forse fatta ma meglio capire se va fatta così
+% todo: Creare regola per eseguire creazione pilastro 
+    % todo: Creare regola per controllare se un pilastro può essere creato
+    % todo: Creare pilastro
 
 %%%%% FACTS %%%%%
 
-% block(ID, X, Y, Z, width, depth, height, orientation, touchL, touchH, shape, made by, linked)
+% block(ID, X, Y, Z, width, height, depth, orientation, touchL, touchH, shape, made by, linked)
 block(b1, 1, 0, 0, 1, 2, 1, 1, table, air, block, [b1], 0).
 block(b2, 1, 0, 1, 1, 2, 1, 3, table, air, block, [b2], 0).
 block(b3, 2, 0, 0, 1, 2, 1, 1, table, air, block, [b3], 0).
@@ -69,9 +71,26 @@ move_list([H|T], NX, NY, NZ) :-
 
 move_compose(Block, X, Y, Z, NX, NY, NZ) :-
     block(Block, X, Y, Z, W, H, D, O, TL, TH, S, MB, L),
+    L = 1,
     (list_length(MB, N), N > 1 -> move_list(MB, NX, NY, NZ); NX = NX, NY = NY, NZ = NZ),
     retract(block(Block, X, Y, Z, W, H, D, O, TL, TH, S, MB, L)),
     assertz(block(Block, NX, NY, NZ, W, H, D, O, TL, TH, S, MB, L)).
+
+%%% FOR PILLAR CREATION %%%
+find_blocks(Blocks) :-
+    findall(block(ID,X,Y,Z,W,H,D,O,TL,TH,S,MB,0), block(ID,X,Y,Z,W,H,D,O,TL,TH,S,MB,0), Blocks).
+
+get_valid_blocks([], _, []). % Caso base: non ci sono blocchi disponibili
+
+get_valid_blocks([block(ID,X,Y,Z,W,H,D,O,TL,TH,S,MB,L)|Rest], HighP, NewP, [Block|ValidBlocks]) :- % Se il blocco e` valido, lo aggiungo alla lista
+    Block = block(ID,X,Y,Z,W,H,D,O,TL,TH,S,MB,L),
+    get_valid_blocks(Rest, NewP, ValidBlocks),
+    NewP1 is NewP + H,
+    NewP1 <= HighP.
+
+get_valid_blocks([block(ID,X,Y,Z,W,H,D,O,TL,TH,S,MB,L)|Rest], HighP, [Block|ValidBlocks]) :- % Se il blocco non e` valido, lo scarto
+    get_valid_blocks(Rest, HighP, ValidBlocks).
+
 
 %%% ACTIONS %%%
 
@@ -120,6 +139,20 @@ link(B1, B2) :-
     assertz(count(s, N1)),
     atom_string(STACK,PIL),
     assertz(block(STACK, X2, Y2, Z2, W1, HighP, D1, 1, TL2, TH1, block, [B1,B2],0)).
+
+unlink(B, X, Y, Z, B1, B2) :-
+    block(B, X, Y, Z, W, H, D, O, TL, TH, S, MB, L),
+    %% PRECONDITIONS %%
+    L = 0,
+    (list_length(MB, N), N > 1),
+    %% POSTCONDITIONS %%    
+    select(B1, MB, MBN1),
+    select(B2, MBN1, MBN12),
+    retract(block(B1, X1, Y1, Z1, W1, H1, D1, O1, TL1, TH1, S1, MB1, L1)),
+    retract(block(B2, X2, Y2, Z2, W2, H2, D2, O2, TL2, TH2, S2, MB2, L2)),
+    retract(block(B, X, Y, Z, W, H, D, O, TL, TH, S, MB, L)),
+    assertz(block(B1, X1, Y1, Z1, W1, H1, D1, O1, TL1, TH1, S1, MB1, 0)),
+    assertz(block(B2, X2, Y2, Z2, W2, H2, D2, O2, TL2, TH2, S2, MB2, 0)).
     
 
 stack(B1, B2, X, Y, Z) :-
@@ -131,9 +164,47 @@ stack(B1, B2, X, Y, Z) :-
     D1 = D2,
     TL1 = 'table',
     TH2 = 'air',
+    %% POSTCONDITIONS %%
     NZ is Z + H2,
     (\+ O1 = 1 -> rotate_block(B1, X1, Y1, Z1, 1); true),
     (\+ O2 = 1 -> rotate_block(B2, X2, Y2, Z2, 1); true),
     move_block(B2, X2, Y2, Z2, X, Y, Z),
     move_block(B1, X1, Y1, Z1, X, Y, NZ),
     link(B1, B2).
+
+pillar(X, Y, Z, High, ValidBlocks) :-
+    %% PRECONDITIONS %%
+    find_blocks(Blocks),
+    get_valid_blocks(Blocks, 4, ValidBlocks).
+
+
+
+/* stackCLP(B1, B2, X, Y, Z) :-
+    block(B1, X1, Y1, Z1, W1, H1, D1, O1, TL1, TH1, S1, MB1, L1),
+    block(B2, X2, Y2, Z2, W2, H2, D2, O2, TL2, TH2, S2, MB2, L2),
+    %% PRECONDITIONS %%
+    all_diff([B1, B2]),
+    W1 = W2,
+    D1 = D2,
+    TL1 = 'table',
+    TH2 = 'air',
+    %% POSTCONDITIONS %%
+    {Ta #= 0},
+    NZ is Z + H2,
+    (\+ O1 = 1 -> (rotate_block(B1, X1, Y1, Z1, 1), {Ta+3 #< Tb}); true, {Ta #= Tb}),
+    (\+ O2 = 1 -> rotate_block(B2, X2, Y2, Z2, 1), {Ta+3 #< Tc}; true, {Ta #= Tc}),
+    move_block(B2, X2, Y2, Z2, X, Y, Z),{Tb+4 #< Td},
+    move_block(B1, X1, Y1, Z1, X, Y, NZ),{Tc+4 #< Te},
+    link(B1, B2), {Td+2 #< Tf, Te+2 #< Tf},
+    write(minimize(Tf)). */
+
+/* test :-
+    {Ta = 0,
+    Ta+3 < Tb,
+    Ta+3 < Tc,
+    Tb+4 < Td,
+    Tc+4 < Te,
+    Td+2 < Tf, 
+    Te+2 < Tf,},
+    minimize(Tf). */
+
