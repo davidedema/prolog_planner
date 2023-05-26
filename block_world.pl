@@ -3,7 +3,7 @@
 :- use_module(library(clpr)).    % for CLP
 
 % todo: Creare regola per eseguire creazione pilastro 
-    % todo: Creare regola per controllare se un pilastro può essere creato
+    % todo: Creare regola per controllare se un pilastro può essere creato -> fatto, devo vedere come formattare meglio la lista
     % todo: Creare pilastro
 
 %%%%% FACTS %%%%%
@@ -80,16 +80,13 @@ move_compose(Block, X, Y, Z, NX, NY, NZ) :-
 find_blocks(Blocks) :-
     findall(block(ID,X,Y,Z,W,H,D,O,TL,TH,S,MB,0), block(ID,X,Y,Z,W,H,D,O,TL,TH,S,MB,0), Blocks).
 
-get_valid_blocks([], _, []). % Caso base: non ci sono blocchi disponibili
+get_valid_blocks(L, HighP, NewP, ValidBlocks) :- % Caso base: non ci sono blocchi disponibili
+    NewP = HighP,
+    exclude(var, ValidBlocks, CleanedValidBloks).
 
 get_valid_blocks([block(ID,X,Y,Z,W,H,D,O,TL,TH,S,MB,L)|Rest], HighP, NewP, [Block|ValidBlocks]) :- % Se il blocco e` valido, lo aggiungo alla lista
-    Block = block(ID,X,Y,Z,W,H,D,O,TL,TH,S,MB,L),
-    get_valid_blocks(Rest, NewP, ValidBlocks),
     NewP1 is NewP + H,
-    NewP1 <= HighP.
-
-get_valid_blocks([block(ID,X,Y,Z,W,H,D,O,TL,TH,S,MB,L)|Rest], HighP, [Block|ValidBlocks]) :- % Se il blocco non e` valido, lo scarto
-    get_valid_blocks(Rest, HighP, ValidBlocks).
+    (NewP1 =< HighP -> Block = block(ID,X,Y,Z,W,H,D,O,TL,TH,S,MB,L), get_valid_blocks(Rest, HighP, NewP1, ValidBlocks); get_valid_blocks(Rest, HighP, NewP, ValidBlocks)).
 
 
 %%% ACTIONS %%%
@@ -175,7 +172,7 @@ stack(B1, B2, X, Y, Z) :-
 pillar(X, Y, Z, High, ValidBlocks) :-
     %% PRECONDITIONS %%
     find_blocks(Blocks),
-    get_valid_blocks(Blocks, 4, ValidBlocks).
+    get_valid_blocks(Blocks, High, 0, ValidBlocks).
 
 
 
