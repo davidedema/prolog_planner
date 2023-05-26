@@ -2,9 +2,7 @@
 :- dynamic count/2.
 :- use_module(library(clpr)).    % for CLP
 
-% todo: Creare regola per eseguire creazione pilastro 
-    % todo: Creare regola per controllare se un pilastro può essere creato -> fatto, devo vedere come formattare meglio la lista
-    % todo: Creare pilastro
+% todo: REGOLA ESISTE!!!, MANCA CHECK SULLA COMPATIBILITÀ DELLE DIMENSIONI
 
 %%%%% FACTS %%%%%
 
@@ -13,7 +11,7 @@ block(b1, 1, 0, 0, 1, 2, 1, 1, table, air, block, [b1], 0).
 block(b2, 1, 0, 1, 1, 2, 1, 3, table, air, block, [b2], 0).
 block(b3, 2, 0, 0, 1, 2, 1, 1, table, air, block, [b3], 0).
 block(b4, 0, 3, 0, 1, 2, 1, 1, table, air, block, [b4], 0).
-block(b5, 0, 0, 0, 4, 1, 4, 1, table, air, block, [b5], 0).
+block(b5, 0, 0, 0, 1, 2, 1, 1, table, air, block, [b5], 0).
 
 % count(ID, Counter)
 count(s,1).
@@ -88,6 +86,14 @@ get_valid_blocks([block(ID,X,Y,Z,W,H,D,O,TL,TH,S,MB,L)|Rest], HighP, NewP, [Bloc
     NewP1 is NewP + H,
     (NewP1 =< HighP -> Block = block(ID,X,Y,Z,W,H,D,O,TL,TH,S,MB,L), get_valid_blocks(Rest, HighP, NewP1, ValidBlocks); get_valid_blocks(Rest, HighP, NewP, ValidBlocks)).
 
+stackRec([], B, X, Y, Z).
+
+stackRec([H|T], B, X, Y, Z) :-
+    block(B1, X1, Y1, Z1, W1, H1, D1, O1, TL1, TH1, S1, MB1, L1) = H,
+    stack(B1, B, X, Y, Z, R),
+    stackRec(T, R, X, Y, Z).
+
+
 
 %%% ACTIONS %%%
 
@@ -111,7 +117,7 @@ move_block(Block, X, Y, Z, NX, NY, NZ) :-
     retract(block(Block, X, Y, Z, W, H, D, O, TL, TH, S, MB, L)),
     assertz(block(Block, NX, NY, NZ, W, H, D, O, TL, TH, S, MB, L)).
 
-link(B1, B2) :-
+link(B1, B2, R) :-
     block(B1, X1, Y1, Z1, W1, H1, D1, O1, TL1, TH1, S1, MB1, L1),
     block(B2, X2, Y2, Z2, W2, H2, D2, O2, TL2, TH2, S2, MB2, L2),
     count(s, N),
@@ -135,6 +141,7 @@ link(B1, B2) :-
     N1 is N+1,
     assertz(count(s, N1)),
     atom_string(STACK,PIL),
+    R = STACK,
     assertz(block(STACK, X2, Y2, Z2, W1, HighP, D1, 1, TL2, TH1, block, [B1,B2],0)).
 
 unlink(B, X, Y, Z, B1, B2) :-
@@ -152,7 +159,7 @@ unlink(B, X, Y, Z, B1, B2) :-
     assertz(block(B2, X2, Y2, Z2, W2, H2, D2, O2, TL2, TH2, S2, MB2, 0)).
     
 
-stack(B1, B2, X, Y, Z) :-
+stack(B1, B2, X, Y, Z, R) :-
     block(B1, X1, Y1, Z1, W1, H1, D1, O1, TL1, TH1, S1, MB1, L1),
     block(B2, X2, Y2, Z2, W2, H2, D2, O2, TL2, TH2, S2, MB2, L2),
     %% PRECONDITIONS %%
@@ -167,41 +174,21 @@ stack(B1, B2, X, Y, Z) :-
     (\+ O2 = 1 -> rotate_block(B2, X2, Y2, Z2, 1); true),
     move_block(B2, X2, Y2, Z2, X, Y, Z),
     move_block(B1, X1, Y1, Z1, X, Y, NZ),
-    link(B1, B2).
+    link(B1, B2, R).
 
-pillar(X, Y, Z, High, ValidBlocks) :-
+pillar(X, Y, Z, High) :-
     %% PRECONDITIONS %%
     find_blocks(Blocks),
-    get_valid_blocks(Blocks, High, 0, ValidBlocks).
-
-
-
-/* stackCLP(B1, B2, X, Y, Z) :-
-    block(B1, X1, Y1, Z1, W1, H1, D1, O1, TL1, TH1, S1, MB1, L1),
-    block(B2, X2, Y2, Z2, W2, H2, D2, O2, TL2, TH2, S2, MB2, L2),
-    %% PRECONDITIONS %%
-    all_diff([B1, B2]),
-    W1 = W2,
-    D1 = D2,
-    TL1 = 'table',
-    TH2 = 'air',
+    get_valid_blocks(Blocks, High, 0, ValidBlocks), 
     %% POSTCONDITIONS %%
-    {Ta #= 0},
-    NZ is Z + H2,
-    (\+ O1 = 1 -> (rotate_block(B1, X1, Y1, Z1, 1), {Ta+3 #< Tb}); true, {Ta #= Tb}),
-    (\+ O2 = 1 -> rotate_block(B2, X2, Y2, Z2, 1), {Ta+3 #< Tc}; true, {Ta #= Tc}),
-    move_block(B2, X2, Y2, Z2, X, Y, Z),{Tb+4 #< Td},
-    move_block(B1, X1, Y1, Z1, X, Y, NZ),{Tc+4 #< Te},
-    link(B1, B2), {Td+2 #< Tf, Te+2 #< Tf},
-    write(minimize(Tf)). */
+    nth0(0, ValidBlocks, BL1),
+    nth0(1, ValidBlocks, BL2),
+    block(B1, X1, Y1, Z1, W1, H1, D1, O1, TL1, TH1, S1, MB1, L1) = BL1,
+    block(B2, X2, Y2, Z2, W2, H2, D2, O2, TL2, TH2, S2, MB2, L2) = BL2,
+    stack(B1, B2, X, Y, Z, R),
+    select(BL1, ValidBlocks, ValidBlocks1),
+    select(BL2, ValidBlocks1, ValidBlocks2),
+    stackRec(ValidBlocks2, R, X, Y, Z).
 
-/* test :-
-    {Ta = 0,
-    Ta+3 < Tb,
-    Ta+3 < Tc,
-    Tb+4 < Td,
-    Tc+4 < Te,
-    Td+2 < Tf, 
-    Te+2 < Tf,},
-    minimize(Tf). */
+
 
