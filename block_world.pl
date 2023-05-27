@@ -2,7 +2,8 @@
 :- dynamic count/2.
 :- use_module(library(clpr)).    % for CLP
 
-% todo: REGOLA ESISTE!!!, MANCA CHECK SULLA COMPATIBILITÀ DELLE DIMENSIONI
+% todo: REGOLA ESISTE!!!, MANCA CHECK SULLA COMPATIBILITÀ DELLE DIMENSIONI'
+% todo: REGOLA PER SVOLGERE LE ROTAZIONI CON SENSO
 
 %%%%% FACTS %%%%%
 
@@ -12,6 +13,11 @@ block(b2, 1, 0, 1, 1, 2, 1, 3, table, air, block, [b2], 0).
 block(b3, 2, 0, 0, 1, 2, 1, 1, table, air, block, [b3], 0).
 block(b4, 0, 3, 0, 1, 2, 1, 1, table, air, block, [b4], 0).
 block(b5, 0, 0, 0, 1, 2, 1, 1, table, air, block, [b5], 0).
+block(b6, 1, 1, 0, 1, 2, 1, 1, table, air, block, [b6], 0).
+block(b7, 1, 3, 1, 1, 2, 1, 3, table, air, block, [b7], 0).
+block(b8, 2, 2, 0, 1, 2, 1, 1, table, air, block, [b8], 0).
+block(b9, 1, 3, 0, 1, 2, 1, 1, table, air, block, [b9], 0).
+block(b10, 1, 4, 0, 1, 2, 1, 1, table, air, block, [b10], 0).
 
 % count(ID, Counter)
 count(s,1).
@@ -76,21 +82,21 @@ move_compose(Block, X, Y, Z, NX, NY, NZ) :-
 
 %%% FOR PILLAR CREATION %%%
 find_blocks(Blocks) :-
-    findall(block(ID,X,Y,Z,W,H,D,O,TL,TH,S,MB,0), block(ID,X,Y,Z,W,H,D,O,TL,TH,S,MB,0), Blocks).
+    findall(ID, block(ID,X,Y,Z,1,H,1,O,TL,TH,S,MB,0), Blocks).
 
 get_valid_blocks(L, HighP, NewP, ValidBlocks) :- % Caso base: non ci sono blocchi disponibili
     NewP = HighP,
     exclude(var, ValidBlocks, CleanedValidBloks).
 
-get_valid_blocks([block(ID,X,Y,Z,W,H,D,O,TL,TH,S,MB,L)|Rest], HighP, NewP, [Block|ValidBlocks]) :- % Se il blocco e` valido, lo aggiungo alla lista
+get_valid_blocks([ID|Rest], HighP, NewP, [Block|ValidBlocks]) :- % Se il blocco e` valido, lo aggiungo alla lista
+    block(ID, X, Y, Z, W, H, D, O, TL, TH, S, MB, L),
     NewP1 is NewP + H,
-    (NewP1 =< HighP -> Block = block(ID,X,Y,Z,W,H,D,O,TL,TH,S,MB,L), get_valid_blocks(Rest, HighP, NewP1, ValidBlocks); get_valid_blocks(Rest, HighP, NewP, ValidBlocks)).
+    (NewP1 =< HighP -> Block = ID, get_valid_blocks(Rest, HighP, NewP1, ValidBlocks); get_valid_blocks(Rest, HighP, NewP, ValidBlocks)).
 
 stackRec([], B, X, Y, Z).
 
 stackRec([H|T], B, X, Y, Z) :-
-    block(B1, X1, Y1, Z1, W1, H1, D1, O1, TL1, TH1, S1, MB1, L1) = H,
-    stack(B1, B, X, Y, Z, R),
+    stack(H, B, X, Y, Z, R),
     stackRec(T, R, X, Y, Z).
 
 
@@ -181,10 +187,8 @@ pillar(X, Y, Z, High) :-
     find_blocks(Blocks),
     get_valid_blocks(Blocks, High, 0, ValidBlocks), 
     %% POSTCONDITIONS %%
-    nth0(0, ValidBlocks, BL1),
-    nth0(1, ValidBlocks, BL2),
-    block(B1, X1, Y1, Z1, W1, H1, D1, O1, TL1, TH1, S1, MB1, L1) = BL1,
-    block(B2, X2, Y2, Z2, W2, H2, D2, O2, TL2, TH2, S2, MB2, L2) = BL2,
+    nth0(0, ValidBlocks, B1),
+    nth0(1, ValidBlocks, B2),
     stack(B1, B2, X, Y, Z, R),
     select(BL1, ValidBlocks, ValidBlocks1),
     select(BL2, ValidBlocks1, ValidBlocks2),
