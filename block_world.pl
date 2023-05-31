@@ -12,7 +12,7 @@ block(b1, 1, 0, 0, 1, 2, 1, 1, table, air, block, [b1], 0).
 block(b2, 1, 0, 1, 1, 2, 1, 3, table, air, block, [b2], 0).
 block(b3, 2, 0, 0, 1, 2, 1, 1, table, air, block, [b3], 0).
 block(b4, 0, 3, 0, 1, 2, 1, 1, table, air, block, [b4], 0).
-block(b5, 0, 0, 0, 1, 2, 1, 1, table, air, block, [b5], 0).
+block(b5, 0, 0, 0, 1, 1, 1, 1, table, air, block, [b5], 0).
 block(b6, 1, 1, 0, 1, 2, 1, 1, table, air, block, [b6], 0).
 block(b7, 1, 3, 1, 1, 2, 1, 3, table, air, block, [b7], 0).
 block(b8, 2, 2, 0, 1, 2, 1, 1, table, air, block, [b8], 0).
@@ -85,13 +85,20 @@ find_blocks(Blocks) :-
     findall(ID, block(ID,X,Y,Z,1,H,1,O,TL,TH,S,MB,0), Blocks).
 
 get_valid_blocks(L, HighP, NewP, ValidBlocks) :- % Caso base: non ci sono blocchi disponibili
-    NewP = HighP,
-    exclude(var, ValidBlocks, CleanedValidBloks).
+    NewP = HighP.
+
+
+delete_skip([], []).
+delete_skip([skip(yes)|T], Result) :-
+    delete_skip(T, Result).
+delete_skip([H|T], [H|Result]) :-
+    dif(H, skip(yes)),
+    delete_skip(T, Result).
 
 get_valid_blocks([ID|Rest], HighP, NewP, [Block|ValidBlocks]) :- % Se il blocco e` valido, lo aggiungo alla lista
     block(ID, X, Y, Z, W, H, D, O, TL, TH, S, MB, L),
     NewP1 is NewP + H,
-    (NewP1 =< HighP -> Block = ID, get_valid_blocks(Rest, HighP, NewP1, ValidBlocks); get_valid_blocks(Rest, HighP, NewP, ValidBlocks)).
+    (NewP1 =< HighP -> Block = ID, get_valid_blocks(Rest, HighP, NewP1, ValidBlocks); Block = skip(yes), get_valid_blocks(Rest, HighP, NewP, ValidBlocks)).
 
 stackRec([], B, X, Y, Z).
 
@@ -185,7 +192,8 @@ stack(B1, B2, X, Y, Z, R) :-
 pillar(X, Y, Z, High) :-
     %% PRECONDITIONS %%
     find_blocks(Blocks),
-    get_valid_blocks(Blocks, High, 0, ValidBlocks), 
+    get_valid_blocks(Blocks, High, 0, ValidBlocksRaw), 
+    delete_skip(ValidBlocksRaw, ValidBlocks),
     %% POSTCONDITIONS %%
     nth0(0, ValidBlocks, B1),
     nth0(1, ValidBlocks, B2),
