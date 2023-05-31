@@ -1,8 +1,7 @@
-:- dynamic block/13.
-:- dynamic count/2.
-:- use_module(library(clpr)).    % for CLP
+:- dynamic block/13.                % block is dynamic
+:- dynamic count/2.                 % count is dynamic
+:- use_module(library(clpr)).       % for CLP (For now not using)
 
-% todo: REGOLA ESISTE!!!, MANCA CHECK SULLA COMPATIBILITÀ DELLE DIMENSIONI'
 % todo: REGOLA PER SVOLGERE LE ROTAZIONI CON SENSO
 
 %%%%% FACTS %%%%%
@@ -26,6 +25,7 @@ count(s,1).
 
 %%% FOR DEBUG %%%
 
+% Print all the characteristics of a block
 print_block(Block) :- 
     block(Block, X, Y, Z, W, D, H, O, TL, TH, S, MB, L),
     format('Block; ~w:~n', [Block]),
@@ -40,9 +40,11 @@ print_block(Block) :-
 
 %%% CHECKS %%%
 
+% Check if the list elements are all different
 all_diff(L) :-
     \+ (select(X,L,R), memberchk(X,R)).
 
+% Return the length of a list
 list_length([], 0).
 
 list_length([_|T], N) :-
@@ -57,6 +59,7 @@ rotate_list([H|T], NO) :-
     rotate_compose(H, _, _, _, NO),
     rotate_list(T, NO).
 
+% Rotate a block that normally cannot be rotated (only for mantaining consistency)
 rotate_compose(Block, X, Y, Z, NO) :-
     block(Block, X, Y, Z, W, H, D, O, TL, TH, S, MB, L),
     (list_length(MB, N), N > 1 -> rotate_list(MB, NO); NO = NO),
@@ -73,6 +76,7 @@ move_list([H|T], NX, NY, NZ) :-
     move_compose(H, X, Y, Z, NX, NY, Z1),
     move_list(T, NX, NY, NZ).
 
+% Move a block that normally cannot be moved (only for mantaining consistency)
 move_compose(Block, X, Y, Z, NX, NY, NZ) :-
     block(Block, X, Y, Z, W, H, D, O, TL, TH, S, MB, L),
     L = 1,
@@ -81,13 +85,20 @@ move_compose(Block, X, Y, Z, NX, NY, NZ) :-
     assertz(block(Block, NX, NY, NZ, W, H, D, O, TL, TH, S, MB, L)).
 
 %%% FOR PILLAR CREATION %%%
+% Return all blocks
 find_blocks(Blocks) :-
     findall(ID, block(ID,X,Y,Z,1,H,1,O,TL,TH,S,MB,0), Blocks).
 
-get_valid_blocks(L, HighP, NewP, ValidBlocks) :- % Caso base: non ci sono blocchi disponibili
+% Return all blocks that satisfy the conditions
+get_valid_blocks(L, HighP, NewP, ValidBlocks, Width, Depth) :- % Final Case: Return all blocks
     NewP = HighP.
 
+get_valid_blocks([ID|Rest], HighP, NewP, [Block|ValidBlocks], Width, Depth) :- % If block is valid, add it to the list
+    block(ID, X, Y, Z, W, H, D, O, TL, TH, S, MB, L),
+    NewP1 is NewP + H,
+    ((NewP1 =< HighP, Width = W, Depth = D) -> Block = ID, get_valid_blocks(Rest, HighP, NewP1, ValidBlocks, Width, Depth); Block = skip(yes), get_valid_blocks(Rest, HighP, NewP, ValidBlocks, Width, Depth)).
 
+% Delete all skip(yes) from the list
 delete_skip([], []).
 delete_skip([skip(yes)|T], Result) :-
     delete_skip(T, Result).
@@ -95,11 +106,7 @@ delete_skip([H|T], [H|Result]) :-
     dif(H, skip(yes)),
     delete_skip(T, Result).
 
-get_valid_blocks([ID|Rest], HighP, NewP, [Block|ValidBlocks]) :- % Se il blocco e` valido, lo aggiungo alla lista
-    block(ID, X, Y, Z, W, H, D, O, TL, TH, S, MB, L),
-    NewP1 is NewP + H,
-    (NewP1 =< HighP -> Block = ID, get_valid_blocks(Rest, HighP, NewP1, ValidBlocks); Block = skip(yes), get_valid_blocks(Rest, HighP, NewP, ValidBlocks)).
-
+% For recursive stacking
 stackRec([], B, X, Y, Z).
 
 stackRec([H|T], B, X, Y, Z) :-
@@ -108,7 +115,7 @@ stackRec([H|T], B, X, Y, Z) :-
 
 
 
-%%% ACTIONS %%%
+%%% BASE ACTIONS %%%
 
 rotate_block(Block, X, Y, Z, NO) :-
     block(Block, X, Y, Z, W, H, D, O, TL, TH, S, MB, L),
@@ -172,6 +179,8 @@ unlink(B, X, Y, Z, B1, B2) :-
     assertz(block(B2, X2, Y2, Z2, W2, H2, D2, O2, TL2, TH2, S2, MB2, 0)).
     
 
+%% COMPOSED ACTIONS %%
+
 stack(B1, B2, X, Y, Z, R) :-
     block(B1, X1, Y1, Z1, W1, H1, D1, O1, TL1, TH1, S1, MB1, L1),
     block(B2, X2, Y2, Z2, W2, H2, D2, O2, TL2, TH2, S2, MB2, L2),
@@ -189,10 +198,10 @@ stack(B1, B2, X, Y, Z, R) :-
     move_block(B1, X1, Y1, Z1, X, Y, NZ),
     link(B1, B2, R).
 
-pillar(X, Y, Z, High) :-
+pillar(X, Y, Z, High, Width, Depth) :-
     %% PRECONDITIONS %%
     find_blocks(Blocks),
-    get_valid_blocks(Blocks, High, 0, ValidBlocksRaw), 
+    get_valid_blocks(Blocks, High, 0, ValidBlocksRaw, Width, Depth), 
     delete_skip(ValidBlocksRaw, ValidBlocks),
     %% POSTCONDITIONS %%
     nth0(0, ValidBlocks, B1),
