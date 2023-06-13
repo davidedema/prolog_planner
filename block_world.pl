@@ -90,21 +90,26 @@ find_blocks(Blocks) :-
     findall(ID, block(ID,X,Y,Z,1,H,1,O,TL,TH,S,MB,0), Blocks).
 
 % Return all blocks that satisfy the conditions
-get_valid_blocks(L, HighP, NewP, ValidBlocks, Width, Depth) :- % Final Case: Return all blocks
-    NewP = HighP.
+% Predicato principale per generare una lista di blocchi con somma delle altezze desiderata
+valid_blocks(Blocchi, AltezzaDesiderata, BlocchiRisultato) :-
+    length(Blocchi, N),               % Ottiene la lunghezza della lista di blocchi
+    between(1, N, NumBlocchi),        % Genera un numero tra 1 e N (inclusi) per il numero di blocchi da selezionare
+    length(BlocchiRisultato, NumBlocchi),  % Crea una lista di lunghezza NumBlocchi per i blocchi selezionati
+    select_blocks(Blocchi, BlocchiRisultato, AltezzaDesiderata). % Richiama il predicato ausiliario per selezionare i blocchi
 
-get_valid_blocks([ID|Rest], HighP, NewP, [Block|ValidBlocks], Width, Depth) :- % If block is valid, add it to the list
-    block(ID, X, Y, Z, W, H, D, O, TL, TH, S, MB, L),
-    NewP1 is NewP + H,
-    ((NewP1 =< HighP, Width = W, Depth = D) -> Block = ID, get_valid_blocks(Rest, HighP, NewP1, ValidBlocks, Width, Depth); Block = skip(yes), get_valid_blocks(Rest, HighP, NewP, ValidBlocks, Width, Depth)).
+% Predicato ausiliario per selezionare i blocchi
+select_blocks(_, [], 0). % Caso base: la lista dei blocchi selezionati è vuota e la somma è 0
+select_blocks(Blocchi, [Blocco|Resto], AltezzaDesiderata) :-
+    seleziona(Blocco, Blocchi, BlocchiRimasti), % Seleziona un blocco dalla lista di blocchi
+    block(Blocco, _, _, _, _, Altezza, _, _, _, _, _, _, _), % Ottiene l'altezza del blocco selezionato
+    AltezzaDesiderata >= Altezza,                % Verifica che l'altezza desiderata sia maggiore o uguale all'altezza del blocco selezionato
+    AltezzaRimasta is AltezzaDesiderata - Altezza,
+    select_blocks(BlocchiRimasti, Resto, AltezzaRimasta). % Richiama ricorsivamente il predicato per i blocchi rimanenti
 
-% Delete all skip(yes) from the list
-delete_skip([], []).
-delete_skip([skip(yes)|T], Result) :-
-    delete_skip(T, Result).
-delete_skip([H|T], [H|Result]) :-
-    dif(H, skip(yes)),
-    delete_skip(T, Result).
+% Predicato ausiliario per selezionare un elemento dalla lista
+seleziona(X, [X|Resto], Resto).
+seleziona(X, [Y|Resto], [Y|Resto1]) :-
+    seleziona(X, Resto, Resto1).
 
 % For recursive stacking
 stackRec([], B, X, Y, Z).
@@ -201,8 +206,7 @@ stack(B1, B2, X, Y, Z, R) :-
 pillar(X, Y, Z, High, Width, Depth) :-
     %% PRECONDITIONS %%
     find_blocks(Blocks),
-    get_valid_blocks(Blocks, High, 0, ValidBlocksRaw, Width, Depth), 
-    delete_skip(ValidBlocksRaw, ValidBlocks),
+    valid_blocks(Blocks, High, ValidBlocks),
     %% POSTCONDITIONS %%
     nth0(0, ValidBlocks, B1),
     nth0(1, ValidBlocks, B2),
