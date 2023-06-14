@@ -90,23 +90,22 @@ find_blocks(Blocks) :-
     findall(ID, block(ID,X,Y,Z,1,H,1,O,TL,TH,S,MB,0), Blocks).
 
 % Return all blocks that satisfy the conditions
-% Predicato principale per generare una lista di blocchi con somma delle altezze desiderata
-valid_blocks(Blocchi, AltezzaDesiderata, BlocchiRisultato) :-
-    length(Blocchi, N),               % Ottiene la lunghezza della lista di blocchi
-    between(1, N, NumBlocchi),        % Genera un numero tra 1 e N (inclusi) per il numero di blocchi da selezionare
-    length(BlocchiRisultato, NumBlocchi),  % Crea una lista di lunghezza NumBlocchi per i blocchi selezionati
-    select_blocks(Blocchi, BlocchiRisultato, AltezzaDesiderata). % Richiama il predicato ausiliario per selezionare i blocchi
+valid_blocks(Blocks, DesiredHeight, ResultBlocks) :-
+    length(Blocks, N),               
+    between(1, N, NumBlocks),        
+    length(ResultBlocks, NumBlocks),  
+    select_blocks(Blocks, ResultBlocks, DesiredHeight). 
 
-% Predicato ausiliario per selezionare i blocchi
-select_blocks(_, [], 0). % Caso base: la lista dei blocchi selezionati è vuota e la somma è 0
-select_blocks(Blocchi, [Blocco|Resto], AltezzaDesiderata) :-
-    seleziona(Blocco, Blocchi, BlocchiRimasti), % Seleziona un blocco dalla lista di blocchi
-    block(Blocco, _, _, _, _, Altezza, _, _, _, _, _, _, _), % Ottiene l'altezza del blocco selezionato
-    AltezzaDesiderata >= Altezza,                % Verifica che l'altezza desiderata sia maggiore o uguale all'altezza del blocco selezionato
-    AltezzaRimasta is AltezzaDesiderata - Altezza,
-    select_blocks(BlocchiRimasti, Resto, AltezzaRimasta). % Richiama ricorsivamente il predicato per i blocchi rimanenti
 
-% Predicato ausiliario per selezionare un elemento dalla lista
+select_blocks(_, [], 0). 
+select_blocks(Blocks, [Block|Remaining], DesiredHeight) :-
+    seleziona(Block, Blocks, RemaningBlocks), 
+    block(Block, _, _, _, _, Height, _, _, _, _, _, _, _), 
+    DesiredHeight >= Height,                
+    RemainingHeight is DesiredHeight - Height,
+    select_blocks(RemaningBlocks, Remaining, RemainingHeight). 
+
+
 seleziona(X, [X|Resto], Resto).
 seleziona(X, [Y|Resto], [Y|Resto1]) :-
     seleziona(X, Resto, Resto1).
