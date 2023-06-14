@@ -1,11 +1,5 @@
 # Simple task planner for pillar creation
 
-## Table of Contents
-- [Simple task planner for pillar creation](#simple-task-planner-for-pillar-creation)
-  - [Table of Contents](#table-of-contents)
-  - [Install](#install)
-  - [Run](#run)
-
 ## Install
 1) Per provare il progetto assicurarsi di avere [SWI Prolog](https://www.swi-prolog.org/build/PPA.html). L'installazione per ubuntu è la seguente :
 ``` BASH
@@ -60,3 +54,4 @@ block(b5, 1, 1, 4, 1, 1, 1, 1, s1, air, block, [b5], 1).
 block(s1, 1, 1, 0, 1, 4, 1, 1, table, b5, block, [b1, b2], 1).
 block(s2, 1, 1, 0, 1, 5, 1, 1, table, air, block, [b5, s1], 0).
 ```
+
