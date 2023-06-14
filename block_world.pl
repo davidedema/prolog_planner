@@ -90,20 +90,20 @@ find_blocks(Blocks) :-
     findall(ID, block(ID,X,Y,Z,1,H,1,O,TL,TH,S,MB,0), Blocks).
 
 % Return all blocks that satisfy the conditions
-valid_blocks(Blocks, DesiredHeight, ResultBlocks) :-
+valid_blocks(Blocks, DesiredHeight, ResultBlocks, DesiredWidth, DesiredDepth) :-
     length(Blocks, N),               
     between(1, N, NumBlocks),        
     length(ResultBlocks, NumBlocks),  
-    select_blocks(Blocks, ResultBlocks, DesiredHeight). 
+    select_blocks(Blocks, ResultBlocks, DesiredHeight, DesiredWidth, DesiredDepth). 
 
 
-select_blocks(_, [], 0). 
-select_blocks(Blocks, [Block|Remaining], DesiredHeight) :-
+select_blocks(_, [], 0, DesiredWidth, DesiredDepth). 
+select_blocks(Blocks, [Block|Remaining], DesiredHeight, DesiredWidth, DesiredDepth) :-
     seleziona(Block, Blocks, RemaningBlocks), 
-    block(Block, _, _, _, _, Height, _, _, _, _, _, _, _), 
+    block(Block, _, _, _, DesiredWidth, Height, DesiredDepth, _, _, _, _, _, _), 
     DesiredHeight >= Height,                
     RemainingHeight is DesiredHeight - Height,
-    select_blocks(RemaningBlocks, Remaining, RemainingHeight). 
+    select_blocks(RemaningBlocks, Remaining, RemainingHeight, DesiredWidth, DesiredDepth). 
 
 
 seleziona(X, [X|Resto], Resto).
@@ -205,7 +205,7 @@ stack(B1, B2, X, Y, Z, R) :-
 pillar(X, Y, Z, High, Width, Depth) :-
     %% PRECONDITIONS %%
     find_blocks(Blocks),
-    valid_blocks(Blocks, High, ValidBlocks),
+    valid_blocks(Blocks, High, ValidBlocks, Width, Depth),
     %% POSTCONDITIONS %%
     nth0(0, ValidBlocks, B1),
     nth0(1, ValidBlocks, B2),
