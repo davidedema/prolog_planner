@@ -1,8 +1,8 @@
 :- dynamic block/13.                % block is dynamic
+:- dynamic action/1.                % action is dynamic
 :- dynamic count/2.                 % count is dynamic
 :- use_module(library(clpr)).       % for CLP (For now not using)
 
-% todo: REGOLA PER SVOLGERE LE ROTAZIONI CON SENSO
 
 %%%%% FACTS %%%%%
 
@@ -16,7 +16,6 @@ block(b6, 1, 1, 0, 1, 2, 1, 1, table, air, block, [b6], 0).
 block(b7, 1, 3, 1, 1, 2, 1, 3, table, air, block, [b7], 0).
 block(b8, 2, 2, 0, 1, 2, 1, 1, table, air, block, [b8], 0).
 block(b9, 1, 3, 0, 1, 2, 1, 1, table, air, block, [b9], 0).
-block(b10, 1, 4, 0, 1, 2, 1, 1, table, air, block, [b10], 0).
 
 % count(ID, Counter)
 count(s,1).
@@ -87,7 +86,7 @@ move_compose(Block, X, Y, Z, NX, NY, NZ) :-
 %%% FOR PILLAR CREATION %%%
 % Return all blocks
 find_blocks(Blocks) :-
-    findall(ID, block(ID,X,Y,Z,1,H,1,O,TL,TH,S,MB,0), Blocks).
+    findall(ID, block(ID,X,Y,Z,W,H,D,O,TL,TH,S,MB,0), Blocks).
 
 % Return all blocks that satisfy the conditions
 valid_blocks(Blocks, DesiredHeight, ResultBlocks, DesiredWidth, DesiredDepth) :-
@@ -118,6 +117,19 @@ stackRec([H|T], B, X, Y, Z) :-
     stackRec(T, R, X, Y, Z).
 
 
+%%% FOR PYTHON INTEGRATION
+get_blocks(Blocks) :-
+    findall(block(ID,X,Y,Z,W,H,D,O,TL,TH,S,MB,L), block(ID,X,Y,Z,W,H,D,O,TL,TH,S,MB,L), Blocks).
+
+%%% FOR PLAN CREATION %%%
+
+add_action(Action) :-
+    assertz(action(Action)).
+
+plan(Actions) :-
+    findall(A, action(A), Actions),
+    retractall(action(_)).
+
 
 %%% BASE ACTIONS %%%
 
@@ -128,6 +140,7 @@ rotate_block(Block, X, Y, Z, NO) :-
     writeln('-----Rotate Block-----'),
     format('Block ~w has the orientation ~d ~n', [Block, O]),
     format('Block ~w has to have ~d orientation ~n', [Block,NO]),
+    add_action(rotate(Block, X, Y, Z, NO)),
     retract(block(Block, X, Y, Z, W, H, D, O, TL, TH, S, MB, L)),
     assertz(block(Block, X, Y, Z, W, H, D, NO, TL, TH, S, MB, L)).
 
@@ -138,6 +151,7 @@ move_block(Block, X, Y, Z, NX, NY, NZ) :-
     writeln('-----Move block...-----'),
     format('Block ~w was in x:~2f y:~2f z:~2f ~n',[Block, X, Y, Z]),
     format('Has to be moved in in x:~2f y:~2f z:~2f ~n', [NX, NY, NZ]),
+    add_action(move(Block, X, Y, Z, NX, NY, NZ)),
     retract(block(Block, X, Y, Z, W, H, D, O, TL, TH, S, MB, L)),
     assertz(block(Block, NX, NY, NZ, W, H, D, O, TL, TH, S, MB, L)).
 
@@ -156,6 +170,7 @@ link(B1, B2, R) :-
     D1 = D2,
     %% POSTCONDITIONS %%
     HighP is H1 + H2,
+    add_action(link(B1, B2)),
     retract(block(B1, X1, Y1, Z1, W1, H1, D1, O1, TL1, TH1, S1, MB1, L1)),
     retract(block(B2, X2, Y2, Z2, W2, H2, D2, O2, TL2, TH2, S2, MB2, L2)),
     assertz(block(B1, X1, Y1, Z1, W1, H1, D1, O1, B2, TH1, S1, MB1, 1)),
@@ -176,6 +191,7 @@ unlink(B, X, Y, Z, B1, B2) :-
     %% POSTCONDITIONS %%    
     select(B1, MB, MBN1),
     select(B2, MBN1, MBN12),
+    add_action(unlink(B, B1, B2)),
     retract(block(B1, X1, Y1, Z1, W1, H1, D1, O1, TL1, TH1, S1, MB1, L1)),
     retract(block(B2, X2, Y2, Z2, W2, H2, D2, O2, TL2, TH2, S2, MB2, L2)),
     retract(block(B, X, Y, Z, W, H, D, O, TL, TH, S, MB, L)),
@@ -202,7 +218,7 @@ stack(B1, B2, X, Y, Z, R) :-
     move_block(B1, X1, Y1, Z1, X, Y, NZ),
     link(B1, B2, R).
 
-pillar(X, Y, Z, High, Width, Depth) :-
+pillar(X, Y, Z, High, Width, Depth, Actions) :-
     %% PRECONDITIONS %%
     find_blocks(Blocks),
     valid_blocks(Blocks, High, ValidBlocks, Width, Depth),
@@ -212,7 +228,5 @@ pillar(X, Y, Z, High, Width, Depth) :-
     stack(B1, B2, X, Y, Z, R),
     select(BL1, ValidBlocks, ValidBlocks1),
     select(BL2, ValidBlocks1, ValidBlocks2),
-    stackRec(ValidBlocks2, R, X, Y, Z).
-
-
-
+    stackRec(ValidBlocks2, R, X, Y, Z),
+    plan(Actions).
