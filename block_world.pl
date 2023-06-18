@@ -214,7 +214,7 @@ stack(B1, B2, X, Y, Z, R) :-
     NZ is Z + H2,
     (\+ O1 = 1 -> rotate_block(B1, X1, Y1, Z1, 1); true),
     (\+ O2 = 1 -> rotate_block(B2, X2, Y2, Z2, 1); true),
-    move_block(B2, X2, Y2, Z2, X, Y, Z),
+    (\+ (X2 = X, Y2 = Y, Z2 = Z) -> move_block(B2, X2, Y2, Z2, X, Y, Z); true),
     move_block(B1, X1, Y1, Z1, X, Y, NZ),
     link(B1, B2, R).
 
