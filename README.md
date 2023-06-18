@@ -1,24 +1,38 @@
 # Simple task planner for pillar creation
 
 ## Install
+### PROLOG VERSION
 1) Per provare il progetto assicurarsi di avere [SWI Prolog](https://www.swi-prolog.org/build/PPA.html). L'installazione per ubuntu è la seguente :
-``` BASH
-sudo apt-add-repository ppa:swi-prolog/stable
-sudo apt update
-sudo apt install swi-prolog
-```
+    ``` BASH
+    sudo apt-add-repository ppa:swi-prolog/stable
+    sudo apt update
+    sudo apt install swi-prolog
+    ```
 2) Clonare il progetto nel posto desiderato
-```BASH
-git clone https://github.com/davidedema/progetto_tesi.git
-```
+    ```BASH
+    git clone https://github.com/davidedema/progetto_tesi.git
+    ```
 3) Caricare il file con l'interprete swipl
-```BASH
-cd ~/progetto_tesi
-swipl block_world.pl
-```
+    ```BASH
+    cd ~/progetto_tesi
+    swipl block_world.pl
+    ```
+
+### PYTHON VERSION
+1) Seguire fino a punto 2 l'installazione 'Prolog'
+2) Installare Python verione > 3.10
+   ```
+   sudo apt install python3
+   ```
+3) Installare [**Pyswip**](https://github.com/yuce/pyswip)
+    ```BASH
+    pip3 install git+https://github.com/yuce/pyswip@master#egg=pyswip
+    ```
+4) Eseguire il programma `python_node_pof.py`
 
 ## Run
 
+### PROLOG VERSION
 Per generare un pilastro usare la regola: `pillar/7`, questa terrà prenderà in 'input' 6 parametri
 - x: cordinata x in cui si vuole creare il pilastro
 - y: cordinata x in cui si vuole creare il pilastro
@@ -56,4 +70,5 @@ block(b5, 1, 1, 4, 1, 1, 1, 1, s1, air, block, [b5], 1).
 block(s1, 1, 1, 0, 1, 4, 1, 1, table, b5, block, [b1, b2], 1).
 block(s2, 1, 1, 0, 1, 5, 1, 1, table, air, block, [b5, s1], 0).
 ```
-
+### PYTHON VERION
+Il programma appena lanciato mostrera un menu contestuale nel quale si potrà interagire con il programma
