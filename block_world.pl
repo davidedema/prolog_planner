@@ -137,9 +137,9 @@ rotate_block(Block, X, Y, Z, NO) :-
     block(Block, X, Y, Z, W, H, D, O, TL, TH, S, MB, L),
     (list_length(MB, N), N > 1 -> rotate_list(MB, NO); NO = NO),
     L is 0,
-    writeln('-----Rotate Block-----'),
+    /* writeln('-----Rotate Block-----'),
     format('Block ~w has the orientation ~d ~n', [Block, O]),
-    format('Block ~w has to have ~d orientation ~n', [Block,NO]),
+    format('Block ~w has to have ~d orientation ~n', [Block,NO]), */
     add_action(rotate(Block, X, Y, Z, NO)),
     retract(block(Block, X, Y, Z, W, H, D, O, TL, TH, S, MB, L)),
     assertz(block(Block, X, Y, Z, W, H, D, NO, TL, TH, S, MB, L)).
@@ -148,9 +148,9 @@ move_block(Block, X, Y, Z, NX, NY, NZ) :-
     block(Block, X, Y, Z, W, H, D, O, TL, TH, S, MB, L),
     (list_length(MB, N), N > 1 -> move_list(MB, NX, NY, NZ); NX = NX, NY = NY, NZ = NZ),
     L is 0,
-    writeln('-----Move block...-----'),
+    /* writeln('-----Move block...-----'),
     format('Block ~w was in x:~2f y:~2f z:~2f ~n',[Block, X, Y, Z]),
-    format('Has to be moved in in x:~2f y:~2f z:~2f ~n', [NX, NY, NZ]),
+    format('Has to be moved in in x:~2f y:~2f z:~2f ~n', [NX, NY, NZ]), */
     add_action(move(Block, X, Y, Z, NX, NY, NZ)),
     retract(block(Block, X, Y, Z, W, H, D, O, TL, TH, S, MB, L)),
     assertz(block(Block, NX, NY, NZ, W, H, D, O, TL, TH, S, MB, L)).
