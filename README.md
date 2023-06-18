@@ -19,7 +19,7 @@ swipl block_world.pl
 
 ## Run
 
-Per generare un pilastro usare la regola: `pillar/6`, questa terrà prenderà in 'input' 6 parametri
+Per generare un pilastro usare la regola: `pillar/7`, questa terrà prenderà in 'input' 6 parametri
 - x: cordinata x in cui si vuole creare il pilastro
 - y: cordinata x in cui si vuole creare il pilastro
 - z: cordinata x in cui si vuole creare il pilastro
@@ -27,9 +27,11 @@ Per generare un pilastro usare la regola: `pillar/6`, questa terrà prenderà in
 - Width: Larghezza del pilastro
 - Depth: Profondità del pilastro
 
+E restituirà in output la lista di azioni actions che conterrà in piano da seguire per creare il pilastro.
+
 Ad esempio per creare il pilastro di altezza **5** alle coordinate (1,1,0).
 ```
-pillar(1,1,0,5,1,1).
+pillar(1,1,0,5,1,1,Actions).
 ```
 **N.B.:** In prolog ogni istruzione termina con il punto '.'. Lanciata questa l'istruzione pilastro verrà mostrata la sequenza di azioni che dovranno essere fatte per creare il pilastro seguite da un **true**, premere invio per continuare.
 
