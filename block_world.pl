@@ -7,15 +7,15 @@
 %%%%% FACTS %%%%%
 
 % block(ID, X, Y, Z, width, height, depth, orientation, touchL, touchH, shape, made by, linked)
-block(b1, 1, 0, 0, 1, 2, 1, 1, table, air, block, [b1], 0).
-block(b2, 1, 0, 1, 1, 2, 1, 3, table, air, block, [b2], 0).
-block(b3, 2, 0, 0, 1, 2, 1, 1, table, air, block, [b3], 0).
-block(b4, 0, 3, 0, 1, 2, 1, 1, table, air, block, [b4], 0).
-block(b5, 0, 0, 0, 1, 1, 1, 1, table, air, block, [b5], 0).
-block(b6, 1, 1, 0, 1, 2, 1, 1, table, air, block, [b6], 0).
-block(b7, 1, 3, 1, 1, 2, 1, 3, table, air, block, [b7], 0).
-block(b8, 2, 2, 0, 1, 2, 1, 1, table, air, block, [b8], 0).
-block(b9, 1, 3, 0, 1, 2, 1, 1, table, air, block, [b9], 0).
+block(b1, 0, 0, 0, 1, 2, 1, 1, table, air, block, [b1], 0).
+block(b2, 5, 1, 1, 1, 2, 1, 3, table, air, block, [b2], 0).
+block(b3, 5, 2, 0, 1, 2, 1, 1, table, air, block, [b3], 0).
+block(b4, 7, 3, 0, 1, 2, 1, 1, table, air, block, [b4], 0).
+block(b5, 9, 4, 0, 1, 1, 1, 1, table, air, block, [b5], 0).
+block(b6, 11, 5, 0, 1, 2, 1, 1, table, air, block, [b6], 0).
+block(b7, 13, 6, 1, 1, 2, 1, 3, table, air, block, [b7], 0).
+block(b8, 15, 7, 0, 1, 2, 1, 1, table, air, block, [b8], 0).
+block(b9, 17, 8, 0, 1, 2, 1, 1, table, air, block, [b9], 0).
 
 % count(ID, Counter)
 count(s,1).
