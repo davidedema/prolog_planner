@@ -43,9 +43,7 @@ def drawCanvas(canvas):
         rect = canvas.create_rectangle(block.X * 50, block.Y * 50, (block.X + block.W) * 50, (block.Y + block.D) * 50, fill="red")
         canvas.create_text(block.X * 50 + 25, block.Y * 50 + 25, text=block.ID, font=("Arial", 20))
         canvas.itemconfig(rect, tags=("block", block.ID))
-        canvas.tag_bind(rect, "<Enter>", on_enter)
-        canvas.tag_bind(rect, "<Leave>", on_leave)
-
+        canvas.tag_bind(rect, "<Button-1>", on_enter)
 def show_block_info(block):
     # Mostra le informazioni del blocco in una finestra di dialogo
     messagebox.showinfo("Informazioni Blocco", f"ID: {block.ID}\nX: {block.X}\nY: {block.Y}\nZ: {block.Z}\nW: {block.W}\nH: {block.H}\nD: {block.D}\nO: {block.O}\nTL: {block.TL}\nTH: {block.TH}\nS: {block.S}\nMB: {block.MB}\nL: {block.L}")
@@ -54,8 +52,6 @@ def on_enter(event):
     tag = event.widget.gettags("current")[1]
     block = next((x for x in blocks if x.ID == tag), None)
     show_block_info(block)
-def on_leave(event):
-    pass
 
 def main(): 
     while True:
