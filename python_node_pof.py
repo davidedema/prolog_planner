@@ -1,5 +1,8 @@
 from pyswip import Prolog
 from block import Block
+import tkinter as tk
+import tkinter.ttk as ttk
+import tkinter.messagebox as messagebox
 import re
 
 patternRot = "rotate\((\w+),\s(\d+),\s(\d+),\s(\d+),\s(\d+)\)"
@@ -35,13 +38,33 @@ def link(id1, id2):
     print("Block ID1: " , id1)
     print("Block ID2: " , id2)
 
-def main():
+def drawCanvas(canvas):
+    for block in blocks:
+        rect = canvas.create_rectangle(block.X * 50, block.Y * 50, (block.X + block.W) * 50, (block.Y + block.D) * 50, fill="red")
+        canvas.create_text(block.X * 50 + 25, block.Y * 50 + 25, text=block.ID, font=("Arial", 20))
+        canvas.itemconfig(rect, tags=("block", block.ID))
+        canvas.tag_bind(rect, "<Enter>", on_enter)
+        canvas.tag_bind(rect, "<Leave>", on_leave)
+
+def show_block_info(block):
+    # Mostra le informazioni del blocco in una finestra di dialogo
+    messagebox.showinfo("Informazioni Blocco", f"ID: {block.ID}\nX: {block.X}\nY: {block.Y}\nZ: {block.Z}\nW: {block.W}\nH: {block.H}\nD: {block.D}\nO: {block.O}\nTL: {block.TL}\nTH: {block.TH}\nS: {block.S}\nMB: {block.MB}\nL: {block.L}")
+
+def on_enter(event):
+    tag = event.widget.gettags("current")[1]
+    block = next((x for x in blocks if x.ID == tag), None)
+    show_block_info(block)
+def on_leave(event):
+    pass
+
+def main(): 
     while True:
         print("--------------------")
         select = input("1) Mostrare blocchi\n2) Creare pilastro\n3) Uscire\n")
         print("--------------------")
         match select:
             case "1":
+                list.clear(blocks)
                 result = list(prolog.query("get_blocks(Blocks)"))
                 for block in result[0]["Blocks"]:
                     match = re.match(patternGet, block)
@@ -49,7 +72,13 @@ def main():
                         blocks.append(Block(match.group(1), int(match.group(2)), int(match.group(3)), int(match.group(4)), int(match.group(5)), int(match.group(6)), int(match.group(7)), int(match.group(8)), match.group(9), match.group(10), match.group(11), match.group(12), int(match.group(13))))
 
                 for block in blocks:
-                    print(block)              
+                    print(block)      
+                window = tk.Tk()
+                window.title("Block World")
+                canvas = tk.Canvas(window, width=1000, height=1000)
+                canvas.pack()
+                drawCanvas(canvas)
+                window.mainloop()        
             case "2":
                 print("Inserisci le coordinate del pilastro:")
                 x = input("x: ")
