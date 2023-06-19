@@ -1,12 +1,16 @@
 from pyswip import Prolog
+from block import Block
 import re
 
 patternRot = "rotate\((\w+),\s(\d+),\s(\d+),\s(\d+),\s(\d+)\)"
 patternMov = "move\((\w+),\s(\d+),\s(\d+),\s(\d+),\s(\d+),\s(\d+),\s(\d+)\)"
 patternLink = "link\((\w+),\s(\w+)\)"
+patternGet = "block\((\w+),\s(\d+),\s(\d+),\s(\d+),\s(\d+),\s(\d+),\s(\d+),\s(\d+),\s(\w+),\s(\w+),\s(\w+),\s\[([^\]]+)\],\s(\d+)\)"
 
 prolog = Prolog()
 prolog.consult("block_world.pl")
+
+blocks = []
 
 def muovi(id, x, y, z, xf, yf, zf):
     print("INVIO MESSAGGIO MUOVI A ROBOT")
@@ -33,10 +37,19 @@ def link(id1, id2):
 
 def main():
     while True:
+        print("--------------------")
         select = input("1) Mostrare blocchi\n2) Creare pilastro\n3) Uscire\n")
+        print("--------------------")
         match select:
             case "1":
-                result = list(prolog.query("listing(block/13)"))
+                result = list(prolog.query("get_blocks(Blocks)"))
+                for block in result[0]["Blocks"]:
+                    match = re.match(patternGet, block)
+                    if match:
+                        blocks.append(Block(match.group(1), int(match.group(2)), int(match.group(3)), int(match.group(4)), int(match.group(5)), int(match.group(6)), int(match.group(7)), int(match.group(8)), match.group(9), match.group(10), match.group(11), match.group(12), int(match.group(13))))
+
+                for block in blocks:
+                    print(block)              
             case "2":
                 print("Inserisci le coordinate del pilastro:")
                 x = input("x: ")
