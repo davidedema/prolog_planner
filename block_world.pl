@@ -7,15 +7,16 @@
 %%%%% FACTS %%%%%
 
 % block(ID, X, Y, Z, width, height, depth, orientation, touchL, touchH, shape, made by, linked)
-block(b1, 0, 0, 0, 1, 2, 1, 1, table, air, block, [b1], 0).
-block(b2, 5, 1, 1, 1, 2, 1, 3, table, air, block, [b2], 0).
-block(b3, 5, 2, 0, 1, 2, 1, 1, table, air, block, [b3], 0).
-block(b4, 7, 3, 0, 1, 2, 1, 1, table, air, block, [b4], 0).
-block(b5, 9, 4, 0, 1, 1, 1, 1, table, air, block, [b5], 0).
+/* block(b1, 0.27, -0.26, 0.685, 0.05, 0.05, 0.05, 1, table, air, block, [b1], 0). */
+block(b2, 0.41, -0.26, 0.685, 0.05, 0.05, 0.05, 1, table, air, block, [b2], 0).
+/* block(b3, 0.27, , 0.685, 0.05, 0.05, 0.05, 1, table, air, block, [b3], 0).
+block(b4, 0.41, 3, 0.685, 0.05, 0.05, 0.05, 1, table, air, block, [b4], 0). */
+block(b1, 0.27, -0.26, 0.685, 0.05, 0.05, 0.05, 2, table, air, block, [b1], 0).
+/* block(b5, 9, 4, 0, 1, 1, 1, 1, table, air, block, [b5], 0).
 block(b6, 11, 5, 0, 1, 2, 1, 1, table, air, block, [b6], 0).
 block(b7, 13, 6, 1, 1, 2, 1, 3, table, air, block, [b7], 0).
 block(b8, 15, 7, 0, 1, 2, 1, 1, table, air, block, [b8], 0).
-block(b9, 17, 8, 0, 1, 2, 1, 1, table, air, block, [b9], 0).
+block(b9, 17, 8, 0, 1, 2, 1, 1, table, air, block, [b9], 0). */
 
 % count(ID, Counter)
 count(s,1).
@@ -96,7 +97,7 @@ valid_blocks(Blocks, DesiredHeight, ResultBlocks, DesiredWidth, DesiredDepth) :-
     select_blocks(Blocks, ResultBlocks, DesiredHeight, DesiredWidth, DesiredDepth). 
 
 
-select_blocks(_, [], 0, DesiredWidth, DesiredDepth). 
+select_blocks(_, [], 0.0, DesiredWidth, DesiredDepth). 
 select_blocks(Blocks, [Block|Remaining], DesiredHeight, DesiredWidth, DesiredDepth) :-
     seleziona(Block, Blocks, RemaningBlocks), 
     block(Block, _, _, _, DesiredWidth, Height, DesiredDepth, _, _, _, _, _, _), 
@@ -165,7 +166,7 @@ link(B1, B2, R) :-
     L2 = 0,
     X1 = X2,
     Y1 = Y2,
-    Z1 is Z2 + H2,
+    Z1 is Z2 - H2,
     W1 = W2,
     D1 = D2,
     %% POSTCONDITIONS %%
@@ -211,7 +212,7 @@ stack(B1, B2, X, Y, Z, R) :-
     TL1 = 'table',
     TH2 = 'air',
     %% POSTCONDITIONS %%
-    NZ is Z + H2,
+    NZ is Z - H2,
     (\+ O1 = 1 -> rotate_block(B1, X1, Y1, Z1, 1); true),
     (\+ O2 = 1 -> rotate_block(B2, X2, Y2, Z2, 1); true),
     (\+ (X2 = X, Y2 = Y, Z2 = Z) -> move_block(B2, X2, Y2, Z2, X, Y, Z); true),
