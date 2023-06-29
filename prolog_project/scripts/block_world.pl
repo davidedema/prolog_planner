@@ -8,9 +8,10 @@
 
 % block(ID, X, Y, Z, width, height, depth, orientation, touchL, touchH, shape, made by, linked)
 block(b2, 0.41, -0.31, 0.685, 0.05, 0.07, 0.05, 1, table, air, block, [b2], 0).
-% block(b1, 0.27, -0.26, 0.685, 0.05, 0.07, 0.05, 2, table, air, block, [b1], 0).
+block(b1, 0.27, -0.26, 0.685, 0.05, 0.07, 0.05, 2, table, air, block, [b1], 0).
+block(b3, 0.41, -0.26, 0.685, 0.05, 0.07, 0.05, 4, table, air, block, [b3], 0).
+block(b4, -0.40, -0.20, 0.685, 0.05, 0.07, 0.05, 1, table, air, block, [b3], 0).
 
-block(b1, 0.41, -0.26, 0.685, 0.05, 0.07, 0.05, 5, table, air, block, [b1], 0).
 
 
 % count(ID, Counter)
@@ -93,12 +94,14 @@ valid_blocks(Blocks, DesiredHeight, ResultBlocks, DesiredWidth, DesiredDepth) :-
 
 
 select_blocks(_, [], 0.0, DesiredWidth, DesiredDepth). 
+select_blocks(_, [], 0, DesiredWidth, DesiredDepth).
 select_blocks(Blocks, [Block|Remaining], DesiredHeight, DesiredWidth, DesiredDepth) :-
     seleziona(Block, Blocks, RemaningBlocks), 
     block(Block, _, _, _, DesiredWidth, Height, DesiredDepth, _, _, _, _, _, _), 
     DesiredHeight >= Height,                
     RemainingHeight is DesiredHeight - Height,
-    select_blocks(RemaningBlocks, Remaining, RemainingHeight, DesiredWidth, DesiredDepth). 
+    RemainingHeightRounded is round(RemainingHeight * 100) / 100,
+    select_blocks(RemaningBlocks, Remaining, RemainingHeightRounded, DesiredWidth, DesiredDepth). 
 
 
 seleziona(X, [X|Resto], Resto).
