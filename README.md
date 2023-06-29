@@ -54,6 +54,7 @@ For the ROS simulation you will need:
 - [ROS noetic](http://wiki.ros.org/noetic)
 - Python verion >= 3.8
 - [Locosim framework](https://github.com/mfocchi/locosim) for simulating the UR5.
+- [Pyswip](https://github.com/yuce/pyswip)
 
 
 ## Installation
