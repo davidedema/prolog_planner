@@ -9,6 +9,23 @@
     </p>   
 </p>
 
+- [Project Description](#project-description)
+- [Project Structure](#project-structure)
+- [Requirements](#requirements)
+  - [PROLOG ONLY](#prolog-only)
+  - [PROLOG + ROS SIMULATION](#prolog--ros-simulation)
+- [Installation](#installation)
+  - [PROLOG ONLY](#prolog-only-1)
+  - [PROLOG + ROS SIMULATION](#prolog--ros-simulation-1)
+- [Running](#running)
+  - [PROLOG ONLY](#prolog-only-2)
+  - [PROLOG + ROS SIMULATION](#prolog--ros-simulation-2)
+- [Known issues and future works](#known-issues-and-future-works)
+  - [Issues](#issues)
+  - [Future works](#future-works)
+- [Thanks to](#thanks-to)
+
+
 ## Project Description
 The goal of this project was to develop a Prolog Task planner for performing pick and place tasks. The main task is to build a tower with a "user defined" height. At first a prolog program `block_world.pl` was created. Then it was wrapped inside a ROS node for communicating to the robot. 
 
@@ -26,9 +43,18 @@ The main folder is:
 
 ## Requirements
 
+For install the requirements I suggest to follow the [Installation](#installation) section.
+
 ### PROLOG ONLY
+For the prolog only version you will only need the [SWI Prolog](https://www.swi-prolog.org/build/PPA.html) interpeter.
 
 ### PROLOG + ROS SIMULATION
+For the ROS simulation you will need:
+- [SWI Prolog](https://www.swi-prolog.org/build/PPA.html) interpeter
+- [ROS noetic](http://wiki.ros.org/noetic)
+- Python verion >= 3.8
+- [Locosim framework](https://github.com/mfocchi/locosim) for simulating the UR5.
+
 
 ## Installation
 
@@ -57,7 +83,16 @@ I reccomend to use Ubuntu 20.04 (I used it for developing the project)
     pip3 install git+https://github.com/yuce/pyswip@master#egg=pyswip
     ```
 3) Follow the [locosim](https://github.com/mfocchi/locosim) repository for installing ROS and the UR5 simulation
-
+4) Clone this repository inside `~/ros_ws/src`
+    ```
+    git clone https://github.com/davidedema/prolog_planner
+    ```
+5) Build the project
+    ```
+    cd ~/ros_ws
+    catkin_make install
+    source install/setup.bash
+    ```
 ## Running
 
 ### PROLOG ONLY
@@ -69,52 +104,61 @@ In order to create a pillar use the `pillar/7` rule. This needs 7 parameters in 
 - Width: Pillar width
 - Depth: Pillar depth
 - Actions: Our "output" variable
-It will return in the output variable the plan
+
+It will return in the output variable the plan that the robot has to execute in order to perform the pillar creation
+
+For example, let's create the pillar with height = 0.1 at (1, 0, 0)
+```
+pillar(1,0,0,0.1,0.05,0.05,A).
+```
+**PN:** In prolog every instruction finish with the dot '.'. 
+
+After the instruction we will see an output like this:
+```
+?- pillar(1,0,0,0.1,0.05,0.05,A).
+A = [rotate(b1, 0.27, -0.26, 0.685, 1), move(b1, 0.27, -0.26, 0.685, 1, 0, 0), move(b2, 0.41, -0.26, 0.685, 1, 0, -0.05), link(b2, b1)] .
+```
+We can see the freshly created pillar with the instruction `listing(block/13).`
 
 ### PROLOG + ROS SIMULATION
+Before running the simulation we need to setup some parameters for the robot:
+- **ENABLE GRIPPER**
+    - Edit the file `/locosim/robot_control/lab_exercises/lab_palopoli/params.py` at line 44 and 45: set the two flags at **True**. Now the 2 finger gripper and grasping plugin is enabled.
+- **SETUP THE WORLD**
+    - Copy the `X1-Y1-Z2` folder (is the folder model) inside `/locosim/ros_impedance_controller/worlds/models/`
+    - Overwrite the world file: `/locosim/ros_impedance_controller/worlds/tavolo.world` with the *tavolo.world* inside this repository
+- After these two changes run:
+    ```
+    cd ~/ros_ws
+    catkin_make install
+    source install/setup.bash
+    ```
+
+Now you are able to run the simulation with the command:
+```
+python3 -i ~/ros_ws/src/locosim/robot_control/lab_exercises/lab_palopoli/ur5_generic.py
+```
+To enable the two nodes (motion and prolog planner) run these two commands in two separated terminal
+```
+python3 -i ~/ros_ws/src/prolog_project/prolog_project/scripts/motion_node.py
+python3 -i ~/ros_ws/src/prolog_project/prolog_project/scripts/prolog_node.py
+```
+
 
 ## Known issues and future works
 
-## Credits
+### Issues
+- [ ] The blocks do not stack in simulation (they jitter)
 
-## Run
+### Future works
+- Get the blocks info with machine learning methods (e.g. neuro problog)
+- Optimize the makespan selecting the blocks that are faster to build 
 
-### PROLOG VERSION
-Per generare un pilastro usare la regola: `pillar/7`, questa terrà prenderà in 'input' 6 parametri
-- x: cordinata x in cui si vuole creare il pilastro
-- y: cordinata x in cui si vuole creare il pilastro
-- z: cordinata x in cui si vuole creare il pilastro
-- High: Altezza del pilastro
-- Width: Larghezza del pilastro
-- Depth: Profondità del pilastro
-
-E restituirà in output la lista di azioni actions che conterrà in piano da seguire per creare il pilastro.
-
-Ad esempio per creare il pilastro di altezza **5** alle coordinate (1,1,0).
-```
-pillar(1,1,0,5,1,1,Actions).
-```
-**N.B.:** In prolog ogni istruzione termina con il punto '.'. Lanciata questa l'istruzione pilastro verrà mostrata la sequenza di azioni che dovranno essere fatte per creare il pilastro seguite da un **true**, premere invio per continuare.
+## Thanks to
+- Luigi Palopoli (Thesis Supervisor): luigi.palopoli@unitn.it
+- Marco Roveri (Supervisor): marco.roveri@unitn.it
+- Edoardo Lamon (Supervisor): edoardo.lamon@unitn.it
+- Enrico Saccon (Supervisor): enrico.saccon@unitn.it
 
 
-Il pilastro appena creato sarà visibile tramite il comando `listing(block/13)` il quale mostra tutti i predicati block/13.
-
-Un possibile output di questo comando sarà il seguente:
-```SWIPL
-?- listing(block/13).
-:- dynamic block/13.
-
-block(b3, 2, 0, 0, 1, 2, 1, 1, table, air, block, [b3], 0).
-block(b4, 0, 3, 0, 1, 2, 1, 1, table, air, block, [b4], 0).
-block(b6, 1, 1, 0, 1, 2, 1, 1, table, air, block, [b6], 0).
-block(b7, 1, 3, 1, 1, 2, 1, 3, table, air, block, [b7], 0).
-block(b8, 2, 2, 0, 1, 2, 1, 1, table, air, block, [b8], 0).
-block(b9, 1, 3, 0, 1, 2, 1, 1, table, air, block, [b9], 0).
-block(b10, 1, 4, 0, 1, 2, 1, 1, table, air, block, [b10], 0).
-block(b1, 1, 1, 2, 1, 2, 1, 1, b2, air, block, [b1], 1).
-block(b2, 1, 1, 0, 1, 2, 1, 1, table, b1, block, [b2], 1).
-block(b5, 1, 1, 4, 1, 1, 1, 1, s1, air, block, [b5], 1).
-block(s1, 1, 1, 0, 1, 4, 1, 1, table, b5, block, [b1, b2], 1).
-block(s2, 1, 1, 0, 1, 5, 1, 1, table, air, block, [b5, s1], 0).
-```
 
