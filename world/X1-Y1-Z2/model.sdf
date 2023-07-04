@@ -37,6 +37,14 @@
             <uri>model://X1-Y1-Z2/meshes/X1-Y1-Z2.stl</uri>
           </mesh>
         </geometry>
+        <surface>
+          <contact>
+            <ode>
+              <min_depth>0.008</min_depth>
+              <max_vel>0.0</max_vel>
+            </ode>
+          </contact>
+        </surface>
       </collision>
     </link>
   </model>
