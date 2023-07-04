@@ -31,6 +31,7 @@ class Publisher:
         self.q0 = np.array([ -0.32,-0.78, -2.56,-1.63, -1.57, 3.49])
         self.rate = rospy.Rate(LOOP_RATE)
         self.gripper = [GRIPPER_OPEN, GRIPPER_OPEN]
+        self.firstB = True
     
     def actionCallback(self, msg):
         print("action received")
@@ -118,7 +119,11 @@ class Publisher:
         self.move([x2,y2,0.5], [0,0,0])
         for i in range(30):
             self.rate.sleep()
-        self.move([x2,y2,z2], [0,0,0])
+        if self.firstB:
+            self.move([x2,y2,z2], [0,0,0])
+            self.firstB = False
+        else:
+            self.move([x2,y2,z2 + 0.02], [0,0,0])
         for i in range(30):
             self.rate.sleep()
         self.openGripper()
