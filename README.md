@@ -149,7 +149,7 @@ python3 -i ~/ros_ws/src/prolog_project/prolog_project/scripts/prolog_node.py
 ## Known issues and future works
 
 ### Issues
-- [ ] The blocks do not stack in simulation (they jitter)
+- [x] The blocks do not stack in simulation (they jitter) -> **Solved**
 
 ### Future works
 - Get the blocks info with machine learning methods (e.g. neuro problog)
