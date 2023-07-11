@@ -1,13 +1,19 @@
 <p align='center'>
     <h1 align="center">Prolog planner for UR5 pick and place</h1>
     <p align="center">
-    Project for my bachelor thesis at the University of Trento A.Y.2022/2023
+    Project for my bachelor degree at the University of Trento A.Y.2022/2023
     </p>
     <p align='center'>
     Developed by:<br>
     De Martini Davide <br>
     </p>   
 </p>
+
+<p align='center'>
+    <img src='img/ur5sim.png'>
+</p>
+
+----------
 
 - [Project Description](#project-description)
 - [Project Structure](#project-structure)
