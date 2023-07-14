@@ -1,3 +1,7 @@
+![Prolog](https://img.shields.io/badge/Prolog-8A2BE2?style=for-the-badge&logo=prolog&logoColor=white)
+![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
+![ROS](https://img.shields.io/badge/ros-%230A0FF9.svg?style=for-the-badge&logo=ros&logoColor=white)
+![Ubuntu](https://img.shields.io/badge/Ubuntu-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)
 <p align='center'>
     <h1 align="center">Prolog planner for UR5 pick and place</h1>
     <p align="center">
