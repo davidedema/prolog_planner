@@ -4,19 +4,24 @@
 :- use_module(library(clpr)).       % for CLP (For now not using)
 
 
+
 %%%%% FACTS %%%%%
 
 % block(ID, X, Y, Z, width, height, depth, orientation, touchL, touchH, shape, made by, linked)
-/* block(b1, 0.27, -0.26, 0.685, 0.05, 0.05, 0.05, 1, table, air, block, [b1], 0). */
-block(b2, 0.41, -0.26, 0.685, 0.05, 0.05, 0.05, 1, table, air, block, [b2], 0).
-/* block(b3, 0.27, , 0.685, 0.05, 0.05, 0.05, 1, table, air, block, [b3], 0).
-block(b4, 0.41, 3, 0.685, 0.05, 0.05, 0.05, 1, table, air, block, [b4], 0). */
-block(b1, 0.27, -0.26, 0.685, 0.05, 0.05, 0.05, 2, table, air, block, [b1], 0).
-/* block(b5, 9, 4, 0, 1, 1, 1, 1, table, air, block, [b5], 0).
+% block(b1, 0.27, -0.26, 0.685, 0.05, 0.05, 0.05, 1, table, air, block, [b1], 0). 
+% block(b2, 0.41, -0.26, 0.685, 0.05, 0.05, 0.05, 1, table, air, block, [b2], 0).
+% block(b3, 0.27, , 0.685, 0.05, 0.05, 0.05, 1, table, air, block, [b3], 0).
+% block(b4, 0.41, 3, 0.685, 0.05, 0.05, 0.05, 1, table, air, block, [b4], 0). 
+% block(b1, 0.27, -0.26, 0.685, 0.05, 0.05, 0.05, 2, table, air, block, [b1], 0). 
+
+block(b2, 1, 1, 0, 1, 1, 1, table, block, block, [b2], 0).
+block(b1, 1, 1, 1, 1, 1, 1, block, air, block, [b2], 0).
+
+block(b5, 9, 4, 0, 1, 1, 1, 1, table, air, block, [b5], 0).
 block(b6, 11, 5, 0, 1, 2, 1, 1, table, air, block, [b6], 0).
 block(b7, 13, 6, 1, 1, 2, 1, 3, table, air, block, [b7], 0).
 block(b8, 15, 7, 0, 1, 2, 1, 1, table, air, block, [b8], 0).
-block(b9, 17, 8, 0, 1, 2, 1, 1, table, air, block, [b9], 0). */
+block(b9, 17, 8, 0, 1, 2, 1, 1, table, air, block, [b9], 0). 
 
 % count(ID, Counter)
 count(s,1).
@@ -98,17 +103,14 @@ valid_blocks(Blocks, DesiredHeight, ResultBlocks, DesiredWidth, DesiredDepth) :-
 
 
 select_blocks(_, [], 0.0, DesiredWidth, DesiredDepth). 
+select_blocks(_, [], 0, DesiredWidth, DesiredDepth). 
 select_blocks(Blocks, [Block|Remaining], DesiredHeight, DesiredWidth, DesiredDepth) :-
-    seleziona(Block, Blocks, RemaningBlocks), 
+    select(Block, Blocks, RemaningBlocks), 
     block(Block, _, _, _, DesiredWidth, Height, DesiredDepth, _, _, _, _, _, _), 
     DesiredHeight >= Height,                
     RemainingHeight is DesiredHeight - Height,
     select_blocks(RemaningBlocks, Remaining, RemainingHeight, DesiredWidth, DesiredDepth). 
 
-
-seleziona(X, [X|Resto], Resto).
-seleziona(X, [Y|Resto], [Y|Resto1]) :-
-    seleziona(X, Resto, Resto1).
 
 % For recursive stacking
 stackRec([], B, X, Y, Z).
@@ -145,15 +147,33 @@ rotate_block(Block, X, Y, Z, NO) :-
     retract(block(Block, X, Y, Z, W, H, D, O, TL, TH, S, MB, L)),
     assertz(block(Block, X, Y, Z, W, H, D, NO, TL, TH, S, MB, L)).
 
+grip_block(Block, X, Y, Z) :- 
+    %% Preconditions are verified inside move_block as a list of blocks may be moved.
+    block(Block, X, Y, Z, W, H, D, O, TL, TH, S, MB, L),
+    %% ACTIONS %%
+    add_action(grip(Block, X, Y, Z)).
+    %% EFFECTS %%
+
+transpose_block(Block, X, Y, Z, NX, NY, NZ) :-
+    block(Block, X, Y, Z, W, H, D, O, TL, TH, S, MB, L),
+    add_action(move(Block, X, Y, Z, NX, NY, NZ)).
+
+release_block(Block, X, Y, Z, NX, NY, NZ) :-
+    block(Block, X, Y, Z, W, H, D, O, TL, TH, S, MB, L),
+    add_action(release(Block, NX, NY, NZ)),
+    assertz(block(Block, NX, NY, NZ, W, H, D, O, TL, TH, S, MB, L)).
+
 move_block(Block, X, Y, Z, NX, NY, NZ) :-
     block(Block, X, Y, Z, W, H, D, O, TL, TH, S, MB, L),
+    %% PRECONDITIONS %%
     (list_length(MB, N), N > 1 -> move_list(MB, NX, NY, NZ); NX = NX, NY = NY, NZ = NZ),
     L is 0,
-    /* writeln('-----Move block...-----'),
-    format('Block ~w was in x:~2f y:~2f z:~2f ~n',[Block, X, Y, Z]),
-    format('Has to be moved in in x:~2f y:~2f z:~2f ~n', [NX, NY, NZ]), */
-    add_action(move(Block, X, Y, Z, NX, NY, NZ)),
+    % add_action(move(Block, X, Y, Z, NX, NY, NZ)),
+    %% EFFECTS %%
+    add_action(grip(Block, X, Y, Z)),
     retract(block(Block, X, Y, Z, W, H, D, O, TL, TH, S, MB, L)),
+    add_action(move(Block, X, Y, Z, NX, NY, NZ)),
+    add_action(release(Block, NX, NY, NZ)),
     assertz(block(Block, NX, NY, NZ, W, H, D, O, TL, TH, S, MB, L)).
 
 link(B1, B2, R) :-
