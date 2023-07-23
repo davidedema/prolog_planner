@@ -145,7 +145,7 @@ select_blocks(Blocks, [Block|Remaining], DesiredHeight, DesiredWidth, DesiredDep
 stackRec([], B, X, Y, Z).
 
 stackRec([H|T], B, X, Y, Z) :-
-    snapshot(stack(H, B, X, Y, Z, R)),
+    stack(H, B, X, Y, Z, R),
     stackRec(T, R, X, Y, Z).
 
 
@@ -220,8 +220,14 @@ move_block(Block, X, Y, Z, NX, NY, NZ, Safe) :-
     L is 0,
     %% EFFECTS %%
     grip_block(Block, X, Y, Z),
+    % add_action(grip(Block, X, Y, Z)),
+    % retract(block(Block, X, Y, Z, W, H, D, O, TL, TH, S, MB, L)),
     translate_block(Block, X, Y, Z, NX, NY, NZ),
-    release_block(Block, NX, NY, NZ, W, H, D, O, TL, TH, S, MB, L).
+    % add_action(move(Block, X, Y, Z, NX, NY, NZ)),
+    release_block(Block, NX, NY, NZ, W, H, D, O, TL, TH, S, MB, L)
+    % add_action(release(Block, NX, NY, NZ)),
+    % assertz(block(Block, NX, NY, NZ, W, H, D, O, TL, TH, S, MB, L))
+    .
 
 %move_block(Block, X, Y, Z, NX, NY, NZ, Safe) :-
 %    block(Block, X, Y, Z, W, H, D, O, TL, TH, S, MB, L),
@@ -297,7 +303,7 @@ stack(B1, B2, X, Y, Z, R) :-
     (\+ O1 = 1 -> rotate_block(B1, X1, Y1, Z1, 1); true),
     (\+ O2 = 1 -> rotate_block(B2, X2, Y2, Z2, 1); true),
     (\+ (X2 = X, Y2 = Y, Z2 = Z) -> move_block(B2, X2, Y2, Z2, X, Y, Z); true),
-    move_block(B1, X1, Y1, Z1, X, Y, NZ),
+    move_block(B1, X1, Y1, Z1, X, Y, NZ, true),
     link(B1, B2, R).
 
 pillar(X, Y, Z, High, Width, Depth, Actions) :-
