@@ -1,8 +1,8 @@
 :- dynamic block/13.                % block is dynamic
 :- dynamic action/1.                % action is dynamic
 :- dynamic count/2.                 % count is dynamic
-:- dynamic robots/1.                % the robots available
-:- dynamic robots_used/1.           % the robots being used
+:- dynamic robot/1.                 % the list of all robots 
+:- dynamic robot_av/2.              % if a robot is available or not
 :- use_module(library(clpr)).       % for CLP (For now not using)
 
 %%%%% FACTS %%%%%
@@ -22,10 +22,10 @@ block(b7, 13, 6, 1, 1, 2, 1, 3, table, air, block, [b7], 0).
 block(b8, 15, 7, 0, 1, 2, 1, 1, table, air, block, [b8], 0).
 block(b9, 17, 8, 0, 1, 2, 1, 1, table, air, block, [b9], 0). 
 
-robots(r1).
-robots(r2).
-robots(r3).
-robots(r4).
+robot(r1).
+robot(r2).
+robot(r3).
+robot(r4).
 
 % count(ID, Counter)
 count(s,1).
@@ -120,16 +120,38 @@ valid_blocks(Blocks, DesiredHeight, ResultBlocks, DesiredWidth, DesiredDepth) :-
     length(ResultBlocks, NumBlocks),  
     select_blocks(Blocks, ResultBlocks, DesiredHeight, DesiredWidth, DesiredDepth). 
 
-find_comb([], 0, []).
+find_comb_blocks([], 0, []).
 
-find_comb([H|T], DesiredHeight, [H | FinalBlocks]) :-
+find_comb_blocks([H|T], DesiredHeight, [H | FinalBlocks]) :-
     block(H, X2, Y2, Z2, W2, H2, D2, O2, TL2, TH2, S2, MB2, L2),
     NewHeight is DesiredHeight - H2,
     NewHeight >= 0,
-    find_comb(T, NewHeight, FinalBlocks).
+    find_comb_blocks(T, NewHeight, FinalBlocks).
 
-find_comb([_|T], DesiredHeight, FinalBlocks) :-
-   find_comb(T, DesiredHeight, FinalBlocks). 
+find_comb_blocks([_|T], DesiredHeight, FinalBlocks) :-
+   find_comb_blocks(T, DesiredHeight, FinalBlocks). 
+
+find_comb_robots_rec([], []).
+
+find_comb_robots_rec([H|T], [H | Permutation]) :-
+    robot(H),
+    find_comb_robots_rec(T, Permutation)
+    .
+
+find_comb_robots_rec([_|T], Permutation) :-
+    find_comb_robots_rec(T, Permutation)
+    .
+
+find_comb_robots(Robots, Perm) :-
+    find_comb_robots_rec(Robots, TempPerm),
+    length(TempPerm, Len), 
+    (
+        (Len == 0, fail);
+        (Len == 1, [H | _] = TempPerm, Perm = [H, H]);
+        (Len > 1, Perm = TempPerm)
+    )
+    .
+
 
 select_blocks(_, [], 0.0, DesiredWidth, DesiredDepth). 
 select_blocks(_, [], 0, DesiredWidth, DesiredDepth). 
@@ -139,14 +161,6 @@ select_blocks(Blocks, [Block|Remaining], DesiredHeight, DesiredWidth, DesiredDep
     DesiredHeight >= Height, 
     RemainingHeight is DesiredHeight - Height,
     select_blocks(RemaningBlocks, Remaining, RemainingHeight, DesiredWidth, DesiredDepth). 
-
-
-% For recursive stacking
-stackRec([], B, X, Y, Z).
-
-stackRec([H|T], B, X, Y, Z) :-
-    stack(H, B, X, Y, Z, R),
-    stackRec(T, R, X, Y, Z).
 
 
 %%% FOR PYTHON INTEGRATION
@@ -171,14 +185,14 @@ plan(Actions) :-
 
 %%% BASE ACTIONS %%%
 
-rotate_block(Block, X, Y, Z, NO) :-
+rotate_block(Block, Robot, X, Y, Z, NO) :-
     block(Block, X, Y, Z, W, H, D, O, TL, TH, S, MB, L),
     (list_length(MB, N), N > 1 -> rotate_list(MB, NO); NO = NO),
     L is 0,
     /* writeln('-----Rotate Block-----'),
     format('Block ~w has the orientation ~d ~n', [Block, O]),
     format('Block ~w has to have ~d orientation ~n', [Block,NO]), */
-    add_action(rotate(Block, X, Y, Z, NO)),
+    add_action(rotate(Block, Rotbot, X, Y, Z, NO)),
     retract(block(Block, X, Y, Z, W, H, D, O, TL, TH, S, MB, L)),
     assertz(block(Block, X, Y, Z, W, H, D, NO, TL, TH, S, MB, L)).
 
@@ -198,50 +212,39 @@ intersection([H|T], Block, X, Y, Z) :-
     );
     intersection(T, Block, X, Y, Z).
 
-grip_block(Block, X, Y, Z) :- 
+grip_block(Block, Robot, X, Y, Z) :- 
+    retract(robot(Robot)),
     add_action(grip(Block, X, Y, Z)),
     retract(block(Block, X, Y, Z, W, H, D, O, TL, TH, S, MB, L)).
 
-translate_block(Block, X, Y, Z, NX, NY, NZ) :-
-    add_action(move(Block, X, Y, Z, NX, NY, NZ)).
+translate_block(Block, Robot, X, Y, Z, NX, NY, NZ) :-
+    add_action(move(Block, Robot, X, Y, Z, NX, NY, NZ)).
 
-release_block(Block, NX, NY, NZ, W, H, D, O, TL, TH, S, MB, L) :- 
+release_block(Block, Robot, NX, NY, NZ, W, H, D, O, TL, TH, S, MB, L) :- 
     add_action(release(Block, NX, NY, NZ)),
-    assertz(block(Block, NX, NY, NZ, W, H, D, O, TL, TH, S, MB, L)).
+    assertz(block(Block, NX, NY, NZ, W, H, D, O, TL, TH, S, MB, L)),
+    assertz(robot(Robot)).
+    
 
-move_block(Block, X, Y, Z, NX, NY, NZ) :-
-    move_block(Block, X, Y, Z, NX, NY, NZ, false).
+move_block(Block, Robot, X, Y, Z, NX, NY, NZ) :-
+    move_block(Block, Robot, X, Y, Z, NX, NY, NZ, false).
 
-move_block(Block, X, Y, Z, NX, NY, NZ, Safe) :-
+move_block(Block, Robot, X, Y, Z, NX, NY, NZ, Safe) :-
     block(Block, X, Y, Z, W, H, D, O, TL, TH, S, MB, L),
     %% PRECONDITIONS %%
     (Safe; find_blocks(Blocks), not(intersection(Blocks,Block,NX,NY,NZ))),
     (list_length(MB, N), N > 1 -> move_list(MB, NX, NY, NZ); NX = NX, NY = NY, NZ = NZ),
     L is 0,
     %% EFFECTS %%
-    grip_block(Block, X, Y, Z),
+    grip_block(Block, Robot, X, Y, Z),
     % add_action(grip(Block, X, Y, Z)),
     % retract(block(Block, X, Y, Z, W, H, D, O, TL, TH, S, MB, L)),
-    translate_block(Block, X, Y, Z, NX, NY, NZ),
+    translate_block(Block, Robot, X, Y, Z, NX, NY, NZ),
     % add_action(move(Block, X, Y, Z, NX, NY, NZ)),
-    release_block(Block, NX, NY, NZ, W, H, D, O, TL, TH, S, MB, L)
+    release_block(Block, Robot, NX, NY, NZ, W, H, D, O, TL, TH, S, MB, L)
     % add_action(release(Block, NX, NY, NZ)),
     % assertz(block(Block, NX, NY, NZ, W, H, D, O, TL, TH, S, MB, L))
     .
-
-%move_block(Block, X, Y, Z, NX, NY, NZ, Safe) :-
-%    block(Block, X, Y, Z, W, H, D, O, TL, TH, S, MB, L),
-%    %% PRECONDITIONS %%
-%    (Safe; find_blocks(Blocks), not(intersection(Blocks,Block,NX,NY,NZ))),
-%    (list_length(MB, N), N > 1 -> move_list(MB, NX, NY, NZ); NX = NX, NY = NY, NZ = NZ),
-%    L is 0,
-%    % add_action(move(Block, X, Y, Z, NX, NY, NZ)),
-%    %% EFFECTS %%
-%    add_action(grip(Block, X, Y, Z)),
-%    retract(block(Block, X, Y, Z, W, H, D, O, TL, TH, S, MB, L)),
-%    add_action(move(Block, X, Y, Z, NX, NY, NZ)),
-%    add_action(release(Block, NX, NY, NZ)),
-%    assertz(block(Block, NX, NY, NZ, W, H, D, O, TL, TH, S, MB, L)).
 
 link(B1, B2, R) :-
     block(B1, X1, Y1, Z1, W1, H1, D1, O1, TL1, TH1, S1, MB1, L1),
@@ -289,7 +292,7 @@ unlink(B, X, Y, Z, B1, B2) :-
 
 %% COMPOSED ACTIONS %%
 
-stack(B1, B2, X, Y, Z, R) :-
+stack(B1, B2, R1, R2, X, Y, Z, NewStack) :-
     block(B1, X1, Y1, Z1, W1, H1, D1, O1, TL1, TH1, S1, MB1, L1),
     block(B2, X2, Y2, Z2, W2, H2, D2, O2, TL2, TH2, S2, MB2, L2),
     %% PRECONDITIONS %%
@@ -300,11 +303,11 @@ stack(B1, B2, X, Y, Z, R) :-
     TH2 = 'air',
     %% POSTCONDITIONS %%
     NZ is Z - H2,
-    (\+ O1 = 1 -> rotate_block(B1, X1, Y1, Z1, 1); true),
-    (\+ O2 = 1 -> rotate_block(B2, X2, Y2, Z2, 1); true),
-    (\+ (X2 = X, Y2 = Y, Z2 = Z) -> move_block(B2, X2, Y2, Z2, X, Y, Z); true),
-    move_block(B1, X1, Y1, Z1, X, Y, NZ, true),
-    link(B1, B2, R).
+    (\+ O1 = 1 -> rotate_block(B1, R1, X1, Y1, Z1, 1); true),
+    (\+ O2 = 1 -> rotate_block(B2, R2, X2, Y2, Z2, 1); true),
+    (\+ (X2 = X, Y2 = Y, Z2 = Z) -> move_block(B2, R2, X2, Y2, Z2, X, Y, Z); true),
+    move_block(B1, R1, X1, Y1, Z1, X, Y, NZ, true),
+    link(B1, B2, NewStack).
 
 pillar(X, Y, Z, High, Width, Depth, Actions) :-
     %% PRECONDITIONS %%
@@ -320,17 +323,31 @@ pillar(X, Y, Z, High, Width, Depth, Actions) :-
     stackRec(ValidBlocks2, R, X, Y, Z),
     plan(Actions).
 
-pillar_from_blocks(X, Y, Z, ValidBlocks, A):-
+pillar_from_blocks(X, Y, Z, ValidBlocks, AvRobots, A):-
     nth0(0, ValidBlocks, B1),
     nth0(1, ValidBlocks, B2),
-    stack(B1, B2, X, Y, Z, R),
+    nth0(0, AvRobots, R1),
+    nth0(1, AvRobots, R2)),
+    stack(B1, B2, R1, R2, X, Y, Z, R),
     select(BL1, ValidBlocks, ValidBlocks1),
     select(BL2, ValidBlocks1, ValidBlocks2),
-    stackRec(ValidBlocks2, R, X, Y, Z),
+    select(RO1, AvRobots, AvRobots1),
+    select(RO2, AvRobots1, AvRobots2),
+    stackRec(ValidBlocks2, NewStack, AvRobots2, X, Y, Z),
     plan(Actions).
 
 all_pillars(X, Y, Z, Height, Width, Depth, Actions) :-
     find_blocks(Blocks),
-    find_comb(Blocks, Height, FinalBlocks),
-    snapshot(pillar_from_blocks(X,Y,Z,FinalBlocks,Actions)).
-    
+    find_comb_blocks(Blocks, Height, FinalBlocks),
+    find_robots(Robots),
+    find_comb_robots(Robots, FinalRobots),
+    snapshot(pillar_from_blocks(X,Y,Z,FinalBlocks,FinalRobots,Actions)).
+ 
+% For recursive stacking
+stackRec([], Block, AvRobots, X, Y, Z).
+
+stackRec([H|T], Stack, AvRobots, X, Y, Z) :-
+    stack(H, Stack, AvRobots, X, Y, Z, NewStack),
+    stackRec(T, NewStack, AvRobots, X, Y, Z).
+
+   
