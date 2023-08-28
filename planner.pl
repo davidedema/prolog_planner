@@ -95,8 +95,8 @@ move(
 go(S, G) :- plan(S, G, [S], []).
 
 % From a, b on the table to b,a stacked.
-test :- go([available(a1), available(a2), available(a3), ontable(a), ontable(b), clear(a), clear(b)],
- 	          [available(a1), available(a2), available(a3), ontable(b), on(a,b), clear(a), inposition(a)]).
+test :- go([available(a1), available(a2), ontable(a), ontable(b), clear(a), clear(b)],
+ 	          [available(a1), available(a2), ontable(b), on(a,b), clear(a), inposition(a)]).
 
 % From b,a stacked to a, b on the table.
 % test :- go(
