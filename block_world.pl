@@ -22,6 +22,8 @@ block(b7, 13, 6, 1, 1, 2, 1, 3, table, air, block, [b7], 0).
 block(b8, 15, 7, 0, 1, 2, 1, 1, table, air, block, [b8], 0).
 block(b9, 17, 8, 0, 1, 2, 1, 1, table, air, block, [b9], 0). 
 
+action(move(), sbjt).
+
 robot(r1).
 robot(r2).
 robot(r3).
@@ -327,7 +329,7 @@ pillar_from_blocks(X, Y, Z, ValidBlocks, AvRobots, A):-
     nth0(0, ValidBlocks, B1),
     nth0(1, ValidBlocks, B2),
     nth0(0, AvRobots, R1),
-    nth0(1, AvRobots, R2)),
+    nth0(1, AvRobots, R2),
     stack(B1, B2, R1, R2, X, Y, Z, R),
     select(BL1, ValidBlocks, ValidBlocks1),
     select(BL2, ValidBlocks1, ValidBlocks2),

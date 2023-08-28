@@ -145,13 +145,22 @@ get_blocks(Blocks) :-
 
 %%% FOR PLAN CREATION %%%
 
-add_action(Action) :-
-  assertz(action(Action)).
+add_action(Action, Arguments, Preconditions, Effects) :-
+  assertz(plan([Action, Arguments, Preconditions, Effects])).
 
 print_actions([]).
 print_actions([H|T]) :-
-  format("~w ", H),
+  (is_list(H) -> 
+    print_actions(H); 
+    format('~w ', H)
+  ),
+  format('~n'),
   print_actions(T).
+
+print_plan() :-
+  findall(A, plan(A), Plan),
+  print_actions(Plan),
+  retractall(plan(_)).
 
 %%% BASE ACTIONS %%%
 
@@ -256,12 +265,10 @@ unlink(B, X, Y, Z, B1, B2) :-
   assertz(block(B2, X2, Y2, Z2, W2, H2, D2, O2, TL2, TH2, S2, MB2, 0)).
   
 
-
-
 action( move_arm, 
         [Agent, Block, X, Y, Z], 
-        [agent(Agent)], 
-        [add_appointed(Agent, Block), del_agent(Agent)]
+        [], 
+        [add_appointed(Agent, Block)]
       ).
 action( grip, 
         [Agent, Block], 
@@ -276,7 +283,7 @@ action( move_block,
 action( release, 
         [Agent, Block, FX, FY, FZ], 
         [appointed(Agent, Block), block(Block,_,_,_,_,_,_,_,3)], 
-        [change_block_coord(Block, FX, FY, FZ), del_appointed(Agent, Block)]
+        [change_block_coord(Block, FX, FY, FZ), del_appointed(Agent, Block), add_agent(Agent)]
       ).
 
 choose_action(Name, Agent, Block, _, _, _, Preconditions, Effects) :-
@@ -334,9 +341,74 @@ apply_effects([del_appointed(A,B)|T]) :-
   apply_effects(T)
   .
 
-pillar(Blocks, Robots, FX, FY, FZ, Moves) :-
-  choose_action(Name, Agent, Block, X, Y, Z, Preconditions, Effects),
-  validate_preconditions(Preconditions),
-  apply_effects(Effects)
+check_pillar(_Moved, []).
+check_pillar(Moved, [H|T]) :-
+  member(H, Moved),
+  check_pillar(Moved, T).
+
+
+pillar(_, _, _FX, _FY, _FZ, Moved, WouldMove) :-
+  list_length(Moved, Len), Len > 0,
+  check_pillar(Moved, WouldMove).
+
+pillar([HB|Blocks], [HA|Agents], FX, FY, FZ, Moved, WouldMove) :-
+  \+ member(HB, Moved) ->
+  (
+    choose_action(Name, HA, HB, FX, FY, FZ, Preconditions, Effects),
+    validate_preconditions(Preconditions),
+    apply_effects(Effects),
+    (Name = release -> append([Moved, [HB]], NewMoved); NewMoved = Moved),
+    add_action(Name, [HA, HB], Preconditions, Effects),
+    (
+      pillar([HB|Blocks], [HA|Agents], FX, FY, FZ, NewMoved, WouldMove);
+      pillar([HB|Blocks], [Agents], FX, FY, FZ, NewMoved, WouldMove);
+      pillar([Blocks], [HA|Agents], FX, FY, FZ, NewMoved, WouldMove);
+      pillar([Blocks], [Agents], FX, FY, FZ, NewMoved, WouldMove)
+    )
+  );
+  pillar([Blocks], [HA|Agents], FX, FY, FZ, NewMoved, WouldMove)
   .
+
+
+% pillar([HB|Blocks], [HA|Agents], FX, FY, FZ, Moved, WouldMove) :-
+%   (
+%     %If 
+%     (
+%       \+ member(HB, Moved), 
+%       block(HB, _, _, _, _, _, _, _, _),
+%       agent(HA)
+%     ) -> 
+%     %Then 
+%     (
+%       choose_action(Name, HA, HB, FX, FY, FZ, Preconditions, Effects),
+%       validate_preconditions(Preconditions),
+%       apply_effects(Effects),
+%       (Name = release -> append([Moved, [HB]], NewMoved); NewMoved = Moved),
+%       add_action(Name, [HA, HB], Preconditions, Effects),
+%       (
+%         pillar([HB|Blocks], [HA|Agents], FX, FY, FZ, NewMoved, WouldMove);
+%       )
+%     ) ;
+%     %Else
+%     (
+%       %If 
+%       (\+ (block(HB, _, _, _, _, _, _, _, _); member(HB, Moved)) ->
+%       %Then 
+%       (
+%         \+ agent(HA) -> 
+%         pillar([Blocks], [Agents], FX, FY, FZ, Moved, WouldMove);
+%         pillar([Blocks], [HA|Agents], FX, FY, FZ, Moved, WouldMove)
+%       );
+%       %Else
+%       (
+%         \+ agent(HA) -> 
+%         pillar([HB|Blocks], [Agents], FX, FY, FZ, Moved, WouldMove);
+%         pillar([HB|Blocks], [HA|Agents], FX, FY, FZ, Moved, WouldMove)
+%       )
+%     )
+%   ).
   
+pillar(Blocks, Agents, FX, FY, FZ) :-
+  pillar(Blocks, Agents, FX, FY, FZ, [], Blocks).
+
+test :- pillar([b2,b5],[a1,a2],10,10,0), print_plan().
