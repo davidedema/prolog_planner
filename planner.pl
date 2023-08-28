@@ -87,10 +87,22 @@ move(
 		).
 
 go(S, G) :- plan(S, G, [S], []).
-test :- go([available(a1), available(a2), available(a3), ontable(a), ontable(b), clear(a), clear(b)],
- 	          [available(a1), available(a2), available(a3), ontable(b), on(a,b), clear(a), inposition(a)]).
-  
 
+% From a, b on the table to b,a stacked.
+% test :- go([available(a1), available(a2), available(a3), ontable(a), ontable(b), clear(a), clear(b)],
+%  	          [available(a1), available(a2), available(a3), ontable(b), on(a,b), clear(a), inposition(a)]).
+
+% From b,a stacked to a, b on the table.
+% test :- go(
+%  	          [available(a1), available(a2), available(a3), ontable(b), on(a,b), clear(a)],
+% 						[available(a1), available(a2), available(a3), ontable(a), ontable(b), clear(a), clear(b), inposition(a), inposition(b)]
+%  	        ).
+
+% From b,a stacked and c on the table to a,b,c stacked.
+test :- go(
+ 	          [available(a1), available(a2), available(a3), ontable(b), on(a,b), clear(a), ontable(c), clear(c)],
+						[available(a1), available(a2), available(a3), ontable(a), on(b,a), on(c,b), clear(c), inposition(c)]
+ 	        ).
 
 /* sample moves */
 
