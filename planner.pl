@@ -29,10 +29,11 @@ plan(State, Goal, _, Moves) :-
 				write('moves are'), nl,
 				reverse_print_stack(Moves).
 plan(State, Goal, Been_list, Moves) :- 	
-				move(Name, PreconditionsT, PreconditionsF, FinalConditions, Actions),
+				move(Name, PreconditionsT, PreconditionsF, FinalConditionsF, Actions),
 				conditions_met(PreconditionsT, State),
+				%conditions_met(FinalConditionsT),
 				conditions_not_met(PreconditionsF, State),
-				conditions_not_met(FinalConditions, Goal),
+				conditions_not_met(FinalConditionsF, Goal),
 				change_state(State, Actions, Child_state),
 				not(member_state(Child_state, Been_list)),
 				stack(Child_state, Been_list, New_been_list),
@@ -75,23 +76,36 @@ move(
 			[del(available(A)), add(gripped(A, B)), del(clear(B))]
 		).
 move(
-			move_aside(A, B, X, Y, X1, Y1),
+			move_aside_ontable(A, B, X, Y, X1, Y1),
 			[gripped(A, B), ontable(B, X, Y)],
 			[ontable(_B, X1, Y1)],
 			[notavalidpredicate(A)],
-			[del(gripped(A, B)), del(ontable(B, X, Y)), add(moving(A, B, X1, Y1))]
+			[
+				del(gripped(A, B)), del(ontable(B, X, Y)),  
+				add(ontable(B, X1, Y1)), add(available(A)), add(clear(B))
+			]
+		).
+move(
+			move_aside_on(A, B, X, Y, X1, Y1),
+			[gripped(A, B), on(B, B1, X, Y)],
+			[ontable(B, X1, Y1)],
+			[notavalidpredicate(A)],
+			[ 
+				del(gripped(A, B)), del(on(B, B1, X, Y)),
+				add(clear(B1)), add(ontable(B, X1, Y1)), add(available(A))
+			]
 		).
 move(
 			move_block_on(A, B, X, Y, X1, Y1),
-			[gripped(A, B), on(B, B1, X, Y), pillar(X1, Y1)],
+			[gripped(A, B), on(B, B1, X, Y)],
 			[notavalidpredicate(A), ontable(_B, X1, Y1)],
 			[notavalidpredicate(A)],
 			[del(gripped(A, B)), del(clear(B)), del(on(B, B1, X, Y)), add(clear(B1)), add(moving(A, B, X1, Y1))]
 		).
 move(
 			move_block_ontable(A, B, X, Y, X1, Y1),
-			[gripped(A, B), ontable(B, X, Y), pillar(X1, Y1)],
-			[notavalidpredicate(A), ontable(_B, X1, Y1)],
+			[gripped(A, B), ontable(B, X, Y)],
+			[notavalidpredicate(A)],
 			[notavalidpredicate(A)],
 			[del(gripped(A, B)), del(ontable(B, X, Y)), add(moving(A, B, X1, Y1))]
 		).
@@ -113,21 +127,27 @@ move(
 go(S, G) :- plan(S, G, [S], []).
 
 % From a, b on the table to b,a stacked.
-test :- go( [available(a1), available(a2), ontable(a, 2, 2), ontable(b, 1, 1), clear(a), clear(b)],
-						[pillar(3,3)],
- 	          [available(a1), available(a2), ontable(b, 3, 3), on(a, b, 3, 3), clear(a), pillar(3, 3)]).
+% test :- go( [available(a1), available(a2), ontable(a, 2, 2), ontable(b, 1, 1), clear(a), clear(b)],
+%  	          [available(a1), available(a2), ontable(b, 3, 3), on(a, b, 3, 3), clear(a)]
+%  	        ).
 
 % From b,a stacked to a, b on the table.
-%test :- go(
-% 	          [available(a1), available(a2), available(a3), ontable(b, 1, 1), on(a, b, 1, 1), clear(a)],
-%						[available(a1), available(a2), available(a3), ontable(a, 2, 2), ontable(b, 3, 3), clear(a), clear(b), inposition(a), inposition(b)]
-% 	        ).
-%
+test :- go(
+						[available(a1), available(a2), available(a3), ontable(b, 1, 1), on(a, b, 1, 1), clear(a)],
+ 	          [available(a1), available(a2), available(a3), ontable(a, 2, 2), ontable(b, 3, 3), clear(a), clear(b)]
+ 	        ).
+
 % From b,a stacked and c on the table to a,b,c stacked.
 % test :- go(
 %  	          [available(a1), available(a2), available(a3), ontable(b), on(a,b), clear(a), ontable(c), clear(c)],
 % 						[available(a1), available(a2), available(a3), ontable(a), on(b,a), on(c,b), clear(c), inposition(c)]
 %  	        ).
+
+% From a,b,c stacked to a,c stacked and c on the table in random position
+% test :-  go(
+% 							[availble(a1), available(a2), availble(a3), ontable(a, 1, 1), on(b,a), on(c,b), clear(c)],
+% 							[availble(a1), available(a2), availble(a3), on(b,a), ontable(a, 1, 1), clear(b), clear(c), ontable(c, X, Y)]
+% 						).
 
 /* sample moves */
 
