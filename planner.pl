@@ -23,19 +23,21 @@
 %%% and appears to function as intended.
 
 :- [adts].
+
 plan(State, Goal, _, Moves) :- 	
 				equal_set(State, Goal), 
 				write('moves are'), nl,
 				reverse_print_stack(Moves).
 plan(State, Goal, Been_list, Moves) :- 	
-				move(Name, PreconditionsT, PreconditionsF, Actions),
+				move(Name, PreconditionsT, PreconditionsF, FinalConditions, Actions),
 				conditions_met(PreconditionsT, State),
 				conditions_not_met(PreconditionsF, State),
+				conditions_not_met(FinalConditions, Goal),
 				change_state(State, Actions, Child_state),
 				not(member_state(Child_state, Been_list)),
 				stack(Child_state, Been_list, New_been_list),
 				stack(Name, Moves, New_moves),
-			plan(Child_state, Goal, New_been_list, New_moves).
+				plan(Child_state, Goal, New_been_list, New_moves).
 
 change_state(S, [], S).
 change_state(S, [add(P)|T], S_new) :-	change_state(S, T, S2),
@@ -50,7 +52,6 @@ conditions_not_met([H|T], S) :-
 					conditions_not_met(T, S)
 					.
 
-
 member_state(S, [H|_]) :- 	equal_set(S, H).
 member_state(S, [_|T]) :- 	member_state(S, T).
 
@@ -60,50 +61,68 @@ reverse_print_stack(S) :- 	stack(E, Rest, S),
 		 		write(E), nl.
 
 move(
-			grip(A, B), 
-			[available(A), clear(B)],
-			[inposition(B), gripped(_A, B)],
+			grip_ontable(A, B), 
+			[ontable(B, X, Y), available(A), clear(B)],
+			[gripped(_A, B)],
+			[ontable(B, X, Y)],
 			[del(available(A)), add(gripped(A, B)), del(clear(B))]
 		).
 move(
-			move_block(A, B),
-			[gripped(A, B), on(B, B1)],
-			[notavalidpredicate(A)],
-			[del(gripped(A, B)), add(clear(B1)), del(clear(B)), del(on(B, B1)),add(moving(A, B))]
+			grip_on(A, B), 
+			[on(B, B1, X, Y), available(A), clear(B)],
+			[gripped(_A, B)],
+			[on(B, B1, X, Y)],
+			[del(available(A)), add(gripped(A, B)), del(clear(B))]
 		).
 move(
-			move_block(A, B),
-			[gripped(A, B), ontable(B)],
+			move_aside(A, B, X, Y, X1, Y1),
+			[gripped(A, B), ontable(B, X, Y)],
+			[ontable(_B, X1, Y1)],
 			[notavalidpredicate(A)],
-			[del(gripped(A, B)), add(moving(A, B))]
+			[del(gripped(A, B)), del(ontable(B, X, Y)), add(moving(A, B, X1, Y1))]
+		).
+move(
+			move_block_on(A, B, X, Y, X1, Y1),
+			[gripped(A, B), on(B, B1, X, Y), pillar(X1, Y1)],
+			[notavalidpredicate(A), ontable(_B, X1, Y1)],
+			[notavalidpredicate(A)],
+			[del(gripped(A, B)), del(clear(B)), del(on(B, B1, X, Y)), add(clear(B1)), add(moving(A, B, X1, Y1))]
+		).
+move(
+			move_block_ontable(A, B, X, Y, X1, Y1),
+			[gripped(A, B), ontable(B, X, Y), pillar(X1, Y1)],
+			[notavalidpredicate(A), ontable(_B, X1, Y1)],
+			[notavalidpredicate(A)],
+			[del(gripped(A, B)), del(ontable(B, X, Y)), add(moving(A, B, X1, Y1))]
 		).
 move(
 			stack(A, B1, B2),
-			[moving(A, B1), clear(B2), inposition(B2)],
+			[moving(A, B1, X1, Y1), clear(B2)],
 			[notavalidpredicate(A)],
-			[del(moving(A, B1)), add(available(A)), del(clear(B2)), add(on(B1, B2)), add(clear(B1)), 
-				add(inposition(B1)), del(inposition(B2))]
+			[notavalidpredicate(A)],
+			[del(moving(A, B1, X1, Y1)), del(clear(B2)), add(available(A)), add(on(B1, B2, X1, Y1)), add(clear(B1))]
 		).
 move(
 			release(A, B),
-			[moving(A, B)],
+			[moving(A, B, X1, Y1)],
+			[notavalidpredicate(A), ontable(_B, X1, Y1)],
 			[notavalidpredicate(A)],
-			[del(moving(A, B)), add(available(A)), add(clear(B)), add(ontable(B)),
-				add(inposition(B))]
+			[del(moving(A, B, X1, Y1)), add(available(A)), add(ontable(B, X1, Y1)), add(clear(B))]
 		).
 
 go(S, G) :- plan(S, G, [S], []).
 
 % From a, b on the table to b,a stacked.
-test :- go([available(a1), available(a2), ontable(a), ontable(b), clear(a), clear(b)],
- 	          [available(a1), available(a2), ontable(b), on(a,b), clear(a), inposition(a)]).
+test :- go( [available(a1), available(a2), ontable(a, 2, 2), ontable(b, 1, 1), clear(a), clear(b)],
+						[pillar(3,3)],
+ 	          [available(a1), available(a2), ontable(b, 3, 3), on(a, b, 3, 3), clear(a), pillar(3, 3)]).
 
 % From b,a stacked to a, b on the table.
-% test :- go(
-%  	          [available(a1), available(a2), available(a3), ontable(b), on(a,b), clear(a)],
-% 						[available(a1), available(a2), available(a3), ontable(a), ontable(b), clear(a), clear(b), inposition(a), inposition(b)]
-%  	        ).
-
+%test :- go(
+% 	          [available(a1), available(a2), available(a3), ontable(b, 1, 1), on(a, b, 1, 1), clear(a)],
+%						[available(a1), available(a2), available(a3), ontable(a, 2, 2), ontable(b, 3, 3), clear(a), clear(b), inposition(a), inposition(b)]
+% 	        ).
+%
 % From b,a stacked and c on the table to a,b,c stacked.
 % test :- go(
 %  	          [available(a1), available(a2), available(a3), ontable(b), on(a,b), clear(a), ontable(c), clear(c)],
