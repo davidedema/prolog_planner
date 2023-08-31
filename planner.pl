@@ -24,31 +24,22 @@
 
 :- [adts].
 
-func(_Preconditions, [], [], -1).
+partial_order(_Preconditions, [], [], -1).
 
-func(Preconditions, [S|T], [I|Times], I) :-
+partial_order(Preconditions, [S|T], [I|Times], I) :-
 	conditions_met(Preconditions, S),
 	NewI is I-1,
-	func(Preconditions, T, Times, NewI).
+	partial_order(Preconditions, T, Times, NewI).
 
-func(Preconditions, [S|T], Times, I) :-
+partial_order(Preconditions, [S|T], Times, I) :-
 	\+conditions_met(Preconditions, S),
 	NewI is I-1,
-	func(Preconditions, T, Times, NewI).
+	partial_order(Preconditions, T, Times, NewI).
 
-func(Preconditions, States, Times) :-
+partial_order(Preconditions, States, Times) :-
 	length(States, NStates),
 	N is NStates - 1,
-	func(Preconditions, States, Times, N).
-
-f([], [], []).
-f([H|T], [H|LE], LO) :-
-	0 is H mod 2,
-	f(T, LE, LO).
-
-f([H|T], LE, [H|LO]) :-
-	1 is H mod 2,
-	f(T, LE, LO).
+	partial_order(Preconditions, States, Times, N).
 
 plan(State, Goal, _, Moves, Times) :- 	
 				equal_set(State, Goal), 
@@ -66,7 +57,7 @@ plan(State, Goal, Been_list, Moves, Times) :-
 				not(member_state(Child_state, Been_list)),
 				stack(Child_state, Been_list, New_been_list),
 				stack(Name, Moves, New_moves),
-				func(PreconditionsT, New_been_list, Time),
+				partial_order(PreconditionsT, New_been_list, Time),
 				stack(Time, Times, New_Times),
 				plan(Child_state, Goal, New_been_list, New_moves, New_Times)
 				.	
@@ -95,29 +86,64 @@ reverse_print_stack(S) :- 	stack(E, Rest, S),
 		 		write(E), nl.
 
 reverse_print_moves_times(Moves, Times) :-
+				length_stack(Moves, Len), length_stack(Times, Len),
+				I is Len,
+				reverse_print_moves_times(Moves, Times, I).
+
+reverse_print_moves_times(Moves, Times, _I) :-
 				empty_stack(Moves),
 				empty_stack(Times).
-reverse_print_moves_times(Moves, Times) :-
-				length_stack(Moves, Len), length_stack(Times, Len),
+
+reverse_print_moves_times(Moves, Times, I) :-
 				stack(M, TMoves, Moves), 
 				stack(T, TTimes, Times),
-				reverse_print_moves_times(TMoves, TTimes),
-				write(M), write(" "), write(T), nl.
+				NewI is I - 1,
+				reverse_print_moves_times(TMoves, TTimes, NewI),
+				format("[~w]\t~w ~w~n", [I, M, T]).
 
 move(
-			grip_ontable(A, B), 
+			grip_ontable_start(A, B), 
 			[ontable(B, X, Y), available(A), clear(B)],
-			[gripped(_A, B)],
+			[gripped(_, B), gripping(_, B)],
 			[ontable(B, X, Y)],
-			[del(available(A)), del(clear(B)), add(gripped(A, B))]
+			[del(available(A)), add(gripping(A, B))]
 		).
 move(
-			grip_on(A, B), 
+			grip_on_start(A, B), 
 			[on(B, B1, X, Y), available(A), clear(B)],
-			[gripped(_A, B)],
+			[gripped(_, B), gripping(_, B)],
 			[on(B, B1, X, Y)],
-			[del(available(A)), del(clear(B)), add(gripped(A, B))]
+			[del(available(A)), add(gripping(A, B))]
 		).
+move(
+			grip_end(A, B), 
+			[gripping(A, B)],
+			[notavalidpredicate(A)],
+			[notavalidpredicate(A)],
+			[del(clear(B)), del(gripping(A, B)), add(gripped(A, B))]
+		).
+ 
+	% move(
+	% 			move_block_on_start(A, B, X, Y, X1, Y1),
+	% 			[gripped(A, B), on(B, B1, X, Y)],
+	% 			[notavalidpredicate(A)],
+	% 			[notavalidpredicate(A)],
+	% 			[del(on(B, B1, X, Y)), add(clear(B1)), add(moving(A, B, X, Y, X1, Y1))]
+	% 		).
+	% move(
+	% 			move_block_ontable_start(A, B, X, Y, X1, Y1),
+	% 			[gripped(A, B), ontable(B, X, Y)],
+	% 			[notavalidpredicate(A)],
+	% 			[notavalidpredicate(A)],
+	% 			[del(ontable(B, X, Y)), add(moving(A, B, X, Y, X1, Y1))]
+	% 		).
+	% move(
+	% 			move_block_end(A, B, X, Y, X1, Y1),
+	% 			[moving(A, B, X, Y, X1, Y1)],
+	% 			[notavalidpredicate(A)],
+	% 			[notavalidpredicate(A)],
+	% 			[del(moving(A, B, X, Y, X1, Y1)), add(moved(A, B, X1, Y1))]
+	% 		).
 move(
 			move_block_on(A, B, X, Y, X1, Y1),
 			[gripped(A, B), on(B, B1, X, Y)],
@@ -132,6 +158,7 @@ move(
 			[notavalidpredicate(A)],
 			[del(ontable(B, X, Y)), add(moving(A, B, X1, Y1))]
 		).
+	
 move(
 			stack(A, B1, B2),
 			[moving(A, B1, X1, Y1), clear(B2)],
@@ -146,6 +173,58 @@ move(
 			[notavalidpredicate(A)],
 			[del(gripped(A, B)), del(moving(A, B, X1, Y1)), add(available(A)), add(ontable(B, X1, Y1)), add(clear(B))]
 		).
+
+	% move(
+	% 			move_block_on_start(A, B, X, Y, X1, Y1),
+	% 			[gripped(A, B), on(B, B1, X, Y)],
+	% 			[notavalidpredicate(A)],
+	% 			[notavalidpredicate(A)],
+	% 			[del(on(B, B1, X, Y)), add(clear(B1)), add(moving(A, B, X, Y, X1, Y1))]
+	% 		).
+	% move(
+	% 			move_block_ontable_start(A, B, X, Y, X1, Y1),
+	% 			[gripped(A, B), ontable(B, X, Y)],
+	% 			[notavalidpredicate(A)],
+	% 			[notavalidpredicate(A)],
+	% 			[del(ontable(B, X, Y)), add(moving(A, B, X, Y, X1, Y1))]
+	% 		).
+	% move(
+	% 			move_block_end(A, B, X, Y, X1, Y1),
+	% 			[moving(A, B, X, Y, X1, Y1)],
+	% 			[notavalidpredicate(A)],
+	% 			[notavalidpredicate(A)],
+	% 			[del(moving(A, B, X, Y, X1, Y1)), add(moved(A, B, X1, Y1))]
+	% 		).
+	% 
+	% move(
+	% 			release_start(A, B),
+	% 			[moved(A, B, X1, Y1)],
+	% 			[notavalidpredicate(A)],
+	% 			[notavalidpredicate(A)],
+	% 			[del(moved(A, B, X1, Y1)), add(releasing(A, B, X1, Y1))]
+	% 		).
+	% move(
+	% 			release(A, B),
+	% 			[releasing(A, B, X1, Y1)],
+	% 			[notavalidpredicate(A)],
+	% 			[notavalidpredicate(A)],
+	% 			[del(releasing(A, B, X1, Y1)), del(gripped(A, B)), add(available(A)), add(ontable(B, X1, Y1)), add(clear(B))]
+	% 		).
+	% 
+	% move(
+	% 			stack_start(A, B1, B2),
+	% 			[moved(A, B1, X1, Y1), clear(B2)],
+	% 			[notavalidpredicate(A)],
+	% 			[notavalidpredicate(A)],
+	% 			[del(clear(B2)), add(stacking(A, B1, B2, X1, Y1))]
+	% 		).
+	% move(
+	% 			stack_end(A, B1, B2),
+	% 			[stacking(A, B1, B2, X1, Y1)],
+	% 			[notavalidpredicate(A)],
+	% 			[notavalidpredicate(A)],
+	% 			[del(gripped(A, B1)), del(stacking(A, B1, B2, X1, Y1)), add(available(A)), add(on(B1, B2, X1, Y1)), add(clear(B1))]
+	% 		).
 
 go(S, G) :- plan(S, G, [S], [], []).
 
@@ -173,7 +252,7 @@ test4 :-  go(
 							[availble(a1), available(a2), availble(a3), ontable(a, 1, 1), on(c, a, 1, 1), ontable(b, 2, 2), clear(b), clear(c)]
 						).
 
-test :- test1.
+test :- test2.
 
 traverse_list([], Prev) :- write(Prev).
 traverse_list([X|Rest], Prev) :-
