@@ -24,21 +24,52 @@
 
 :- [adts].
 
-plan(State, Goal, _, Moves) :- 	
+func(_Preconditions, [], [], -1).
+
+func(Preconditions, [S|T], [I|Times], I) :-
+	conditions_met(Preconditions, S),
+	NewI is I-1,
+	func(Preconditions, T, Times, NewI).
+
+func(Preconditions, [S|T], Times, I) :-
+	\+conditions_met(Preconditions, S),
+	NewI is I-1,
+	func(Preconditions, T, Times, NewI).
+
+func(Preconditions, States, Times) :-
+	length(States, NStates),
+	N is NStates - 1,
+	func(Preconditions, States, Times, N).
+
+f([], [], []).
+f([H|T], [H|LE], LO) :-
+	0 is H mod 2,
+	f(T, LE, LO).
+
+f([H|T], LE, [H|LO]) :-
+	1 is H mod 2,
+	f(T, LE, LO).
+
+plan(State, Goal, _, Moves, Times) :- 	
 				equal_set(State, Goal), 
 				write('moves are'), nl,
-				reverse_print_stack(Moves).
-plan(State, Goal, Been_list, Moves) :- 	
+				%reverse_print_stack(Moves),
+				reverse_print_moves_times(Moves, Times)
+				%true
+				.
+plan(State, Goal, Been_list, Moves, Times) :- 	
 				move(Name, PreconditionsT, PreconditionsF, FinalConditionsF, Actions),
 				conditions_met(PreconditionsT, State),
-				%conditions_met(FinalConditionsT),
 				conditions_not_met(PreconditionsF, State),
 				conditions_not_met(FinalConditionsF, Goal),
 				change_state(State, Actions, Child_state),
 				not(member_state(Child_state, Been_list)),
 				stack(Child_state, Been_list, New_been_list),
 				stack(Name, Moves, New_moves),
-				plan(Child_state, Goal, New_been_list, New_moves).
+				func(PreconditionsT, New_been_list, Time),
+				stack(Time, Times, New_Times),
+				plan(Child_state, Goal, New_been_list, New_moves, New_Times)
+				.	
 
 change_state(S, [], S).
 change_state(S, [add(P)|T], S_new) :-	change_state(S, T, S2),
@@ -63,6 +94,16 @@ reverse_print_stack(S) :- 	stack(E, Rest, S),
 				reverse_print_stack(Rest),
 		 		write(E), nl.
 
+reverse_print_moves_times(Moves, Times) :-
+				empty_stack(Moves),
+				empty_stack(Times).
+reverse_print_moves_times(Moves, Times) :-
+				length_stack(Moves, Len), length_stack(Times, Len),
+				stack(M, TMoves, Moves), 
+				stack(T, TTimes, Times),
+				reverse_print_moves_times(TMoves, TTimes),
+				write(M), write(" "), write(T), nl.
+
 move(
 			grip_ontable(A, B), 
 			[ontable(B, X, Y), available(A), clear(B)],
@@ -82,7 +123,7 @@ move(
 			[gripped(A, B), on(B, B1, X, Y)],
 			[notavalidpredicate(A)],
 			[notavalidpredicate(A)],
-			[del(clear(B)), del(on(B, B1, X, Y)), add(clear(B1)), add(moving(A, B, X1, Y1))]%, diff(X1, X2), diff(Y1, Y2)]
+			[del(clear(B)), del(on(B, B1, X, Y)), add(clear(B1)), add(moving(A, B, X1, Y1))]
 		).
 move(
 			move_block_ontable(A, B, X, Y, X1, Y1),
@@ -106,7 +147,7 @@ move(
 			[del(gripped(A, B)), del(moving(A, B, X1, Y1)), add(available(A)), add(ontable(B, X1, Y1)), add(clear(B))]
 		).
 
-go(S, G) :- plan(S, G, [S], []).
+go(S, G) :- plan(S, G, [S], [], []).
 
 % From a, b on the table to b,a stacked.
 test1 :- go(
@@ -126,53 +167,44 @@ test3 :- go(
 						[available(a1), available(a2), available(a3), ontable(a, 3, 3), on(b, a, 3, 3), on(c, b, 3, 3), clear(c)]
  	        ).
 
-test :- test3.
-
 % From a,b,c stacked to a,c stacked and b on the table in random position
 test4 :-  go(
 							[availble(a1), available(a2), availble(a3), ontable(a, 1, 1), on(b, a, 1, 1), on(c,b, 1, 1), clear(c)],
 							[availble(a1), available(a2), availble(a3), ontable(a, 1, 1), on(c, a, 1, 1), ontable(b, 2, 2), clear(b), clear(c)]
 						).
 
-	% move(
-	% 			move_aside_ontable(A, B, X, Y, X1, Y1),
-	% 			[gripped(A, B), ontable(B, X, Y)],
-	% 			[ontable(_B, X1, Y1)],
-	% 			[notavalidpredicate(A)],
-	% 			[
-	% 				del(gripped(A, B)), del(ontable(B, X, Y)),  
-	% 				add(ontable(B, X1, Y1)), add(available(A)), add(clear(B))
-	% 			]
-	% 		).
-	% move(
-	% 			move_aside_on(A, B, X, Y, X1, Y1),
-	% 			[gripped(A, B), on(B, B1, X, Y)],
-	% 			[ontable(B, X1, Y1)],
-	% 			[notavalidpredicate(A)],
-	% 			[ 
-	% 				del(gripped(A, B)), del(on(B, B1, X, Y)),
-	% 				add(clear(B1)), add(ontable(B, X1, Y1)), add(available(A))
-	% 			]
-	% 		).
+test :- test1.
 
-/* sample moves */
+traverse_list([], Prev) :- write(Prev).
+traverse_list([X|Rest], Prev) :-
+	traverse_list(Rest, X),
+	write(Prev).
 
-% move(pickup(X), [handempty, clear(X), on(X, Y)], 
-% 		[del(handempty), del(clear(X)), del(on(X, Y)), 
-% 				 add(clear(Y)),	add(holding(X))]).
-% 
-% move(pickup(X), [handempty, clear(X), ontable(X)], 
-% 		[del(handempty), del(clear(X)), del(ontable(X)), 
-% 				 add(holding(X))]).
-% 
-% move(putdown(X), [holding(X)], 
-% 		[del(holding(X)), add(ontable(X)), add(clear(X)), 
-% 				  add(handempty)]).
-% 
-% move(stack(X, Y), [holding(X), clear(Y)], 
-% 		[del(holding(X)), del(clear(Y)), add(handempty), add(on(X, Y)),
-% 				  add(clear(X))]).
+traverse_list([X|Rest]) :- traverse_list(Rest, X).
+
+reverse_list([], []).
+reverse_list([X|T], Reversed) :-
+	reverse_list(T, ReversedRest),
+	append(ReversedRest, [X], Reversed).
+
+/* sample moves
+move(pickup(X), [handempty, clear(X), on(X, Y)], 
+		[del(handempty), del(clear(X)), del(on(X, Y)), 
+				 add(clear(Y)),	add(holding(X))]).
+
+move(pickup(X), [handempty, clear(X), ontable(X)], 
+		[del(handempty), del(clear(X)), del(ontable(X)), 
+				 add(holding(X))]).
+
+move(putdown(X), [holding(X)], 
+		[del(holding(X)), add(ontable(X)), add(clear(X)), 
+				  add(handempty)]).
+
+move(stack(X, Y), [holding(X), clear(Y)], 
+		[del(holding(X)), del(clear(Y)), add(handempty), add(on(X, Y)),
+				  add(clear(X))]).
 
 
 testold :- go([handempty, ontable(b), ontable(c), on(a, b), clear(c), clear(a)],
  	          [handempty, ontable(c), on(a,b), on(b, c), clear(a)]).
+*/

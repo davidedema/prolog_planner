@@ -49,6 +49,8 @@ member_stack(E, S) :- member(E, S).
 
 stack(E, S, [E|S]).
 
+length_stack(S, Len) :- length(S, Len).
+
 %%%%%%%%%%%%%%%%%%%% queue operations %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     % These predicates give a simple, list based implementation of 
