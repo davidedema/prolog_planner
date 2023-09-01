@@ -123,42 +123,42 @@ move(
 			[del(clear(B)), del(gripping(A, B)), add(gripped(A, B))]
 		).
  
-	% move(
-	% 			move_block_on_start(A, B, X, Y, X1, Y1),
-	% 			[gripped(A, B), on(B, B1, X, Y)],
-	% 			[notavalidpredicate(A)],
-	% 			[notavalidpredicate(A)],
-	% 			[del(on(B, B1, X, Y)), add(clear(B1)), add(moving(A, B, X, Y, X1, Y1))]
-	% 		).
-	% move(
-	% 			move_block_ontable_start(A, B, X, Y, X1, Y1),
-	% 			[gripped(A, B), ontable(B, X, Y)],
-	% 			[notavalidpredicate(A)],
-	% 			[notavalidpredicate(A)],
-	% 			[del(ontable(B, X, Y)), add(moving(A, B, X, Y, X1, Y1))]
-	% 		).
-	% move(
-	% 			move_block_end(A, B, X, Y, X1, Y1),
-	% 			[moving(A, B, X, Y, X1, Y1)],
-	% 			[notavalidpredicate(A)],
-	% 			[notavalidpredicate(A)],
-	% 			[del(moving(A, B, X, Y, X1, Y1)), add(moved(A, B, X1, Y1))]
-	% 		).
 move(
-			move_block_on(A, B, X, Y, X1, Y1),
+			move_block_on_start(A, B, X, Y, X1, Y1),
 			[gripped(A, B), on(B, B1, X, Y)],
 			[notavalidpredicate(A)],
 			[notavalidpredicate(A)],
-			[del(clear(B)), del(on(B, B1, X, Y)), add(clear(B1)), add(moving(A, B, X1, Y1))]
+			[del(on(B, B1, X, Y)), add(clear(B1)), add(moving(A, B, X, Y, X1, Y1))]
 		).
 move(
-			move_block_ontable(A, B, X, Y, X1, Y1),
+			move_block_ontable_start(A, B, X, Y, X1, Y1),
 			[gripped(A, B), ontable(B, X, Y)],
 			[notavalidpredicate(A)],
 			[notavalidpredicate(A)],
-			[del(ontable(B, X, Y)), add(moving(A, B, X1, Y1))]
+			[del(ontable(B, X, Y)), add(moving(A, B, X, Y, X1, Y1))]
 		).
-	
+move(
+			move_block_end(A, B, X, Y, X1, Y1),
+			[moving(A, B, X, Y, X1, Y1)],
+			[notavalidpredicate(A)],
+			[notavalidpredicate(A)],
+			[del(moving(A, B, X, Y, X1, Y1)), add(moved(A, B, X1, Y1))]
+		).
+	% move(
+	% 			move_block_on(A, B, X, Y, X1, Y1),
+	% 			[gripped(A, B), on(B, B1, X, Y)],
+	% 			[notavalidpredicate(A)],
+	% 			[notavalidpredicate(A)],
+	% 			[del(clear(B)), del(on(B, B1, X, Y)), add(clear(B1)), add(moving(A, B, X1, Y1))]
+	% 		).
+	% move(
+	% 			move_block_ontable(A, B, X, Y, X1, Y1),
+	% 			[gripped(A, B), ontable(B, X, Y)],
+	% 			[notavalidpredicate(A)],
+	% 			[notavalidpredicate(A)],
+	% 			[del(ontable(B, X, Y)), add(moving(A, B, X1, Y1))]
+	% 		).
+	% 	
 move(
 			stack(A, B1, B2),
 			[moving(A, B1, X1, Y1), clear(B2)],
@@ -252,7 +252,7 @@ test4 :-  go(
 							[availble(a1), available(a2), availble(a3), ontable(a, 1, 1), on(c, a, 1, 1), ontable(b, 2, 2), clear(b), clear(c)]
 						).
 
-test :- test2.
+test :- test1.
 
 traverse_list([], Prev) :- write(Prev).
 traverse_list([X|Rest], Prev) :-
