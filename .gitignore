@@ -3,3 +3,6 @@ test.pl
 settings.json
 c_cpp_properties.json
 knap.pl
+
+file.txt
+tmp.txt
