@@ -189,61 +189,6 @@ move(
 		).
 	
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% move(
-% 			grip_ontable(A, B), 
-% 			[ontable(B, X, Y), available(A), clear(B)],
-% 			[gripped(_A, B)],
-% 			[ontable(B, X, Y)],
-% 			[del(available(A)), del(clear(B)), add(gripped(A, B))]
-% 		).
-% move(
-% 			grip_on(A, B), 
-% 			[on(B, B1, X, Y), available(A), clear(B)],
-% 			[gripped(_A, B)],
-% 			[on(B, B1, X, Y)],
-% 			[del(available(A)), del(clear(B)), add(gripped(A, B))]
-% 		).
-% move(
-% 			move_block_on(A, B, X, Y, X1, Y1),
-% 			[gripped(A, B), on(B, B1, X, Y)],
-% 			[notavalidpredicate(A)],
-% 			[notavalidpredicate(A)],
-% 			[del(clear(B)), del(on(B, B1, X, Y)), add(clear(B1)), add(moving(A, B, X1, Y1))]
-% 		).
-% move(
-% 			move_block_ontable(A, B, X, Y, X1, Y1),
-% 			[gripped(A, B), ontable(B, X, Y)],
-% 			[notavalidpredicate(A)],
-% 			[notavalidpredicate(A)],
-% 			[del(ontable(B, X, Y)), add(moving(A, B, X1, Y1))]
-% 		).
-% move(
-% 			stack(A, B1, B2),
-% 			[moving(A, B1, X1, Y1), clear(B2)],
-% 			[gripping(_A, B2)],
-% 			[notavalidpredicate(A)],
-% 			[del(gripped(A, B1)), del(moving(A, B1, X1, Y1)), del(clear(B2)), add(available(A)), add(on(B1, B2, X1, Y1)), add(clear(B1))]
-% 		).
-% move(
-% 			release(A, B),
-% 			[moving(A, B, X1, Y1)],
-% 			[notavalidpredicate(A)],
-% 			[notavalidpredicate(A)],
-% 			[del(gripped(A, B)), del(moving(A, B, X1, Y1)), add(available(A)), add(ontable(B, X1, Y1)), add(clear(B))]
-% 		).
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 go(S, G) :- plan(S, G, [S], [], []).
 
 % From b1, b2 on the table to b2,b1 stacked.
@@ -284,24 +229,3 @@ reverse_list([X|T], Reversed) :-
 	reverse_list(T, ReversedRest),
 	append(ReversedRest, [X], Reversed).
 
-/* sample moves
-move(pickup(X), [handempty, clear(X), on(X, Y)], 
-		[del(handempty), del(clear(X)), del(on(X, Y)), 
-				 add(clear(Y)),	add(holding(X))]).
-
-move(pickup(X), [handempty, clear(X), ontable(X)], 
-		[del(handempty), del(clear(X)), del(ontable(X)), 
-				 add(holding(X))]).
-
-move(putdown(X), [holding(X)], 
-		[del(holding(X)), add(ontable(X)), add(clear(X)), 
-				  add(handempty)]).
-
-move(stack(X, Y), [holding(X), clear(Y)], 
-		[del(holding(X)), del(clear(Y)), add(handempty), add(on(X, Y)),
-				  add(clear(X))]).
-
-
-testold :- go([handempty, ontable(b), ontable(c), on(a, b), clear(c), clear(a)],
- 	          [handempty, ontable(c), on(a,b), on(b, c), clear(a)]).
-*/
