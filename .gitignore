@@ -6,3 +6,8 @@ knap.pl
 
 file.txt
 tmp.txt
+*.txt
+
+prologParser.html
+
+lib/

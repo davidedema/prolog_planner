@@ -1,6 +1,6 @@
 #! /bin/bash
 
-swipl -l $1 -t 'leash(-all),trace,test' &> tmp.txt &
+swipl -l $1 -t 'set_prolog_flag(answer_write_options,[max_depth(0)]),leash(-all),trace,test' &> tmp.txt &
 sleep 3
 killall swipl
 
