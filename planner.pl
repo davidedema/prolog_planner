@@ -41,25 +41,26 @@ partial_order(Preconditions, States, Times) :-
 	N is NStates - 1,
 	partial_order(Preconditions, States, Times, N).
 
-plan(State, Goal, _, Moves, Times) :- 	
+plan(State, Goal, _, Actions, Times) :- 	
 				equal_set(State, Goal), 
-				write('moves are'), nl,
-				%reverse_print_stack(Moves),
-				reverse_print_moves_times(Moves, Times)
+				write('actions are'), nl,
+				%reverse_print_stack(Actions),
+				reverse_print_actions_times(Actions, Times)
 				%true
 				.
-plan(State, Goal, Been_list, Moves, Times) :- 	
-				move(Name, PreconditionsT, PreconditionsF, FinalConditionsF, Actions),
+
+plan(State, Goal, Been_list, Actions, Times) :- 	
+				action(Name, PreconditionsT, PreconditionsF, FinalConditionsF, Effects),
 				conditions_met(PreconditionsT, State),
 				conditions_not_met(PreconditionsF, State),
 				conditions_not_met(FinalConditionsF, Goal),
-				change_state(State, Actions, Child_state),
+				change_state(State, Effects, Child_state),
 				not(member_state(Child_state, Been_list)),
 				stack(Child_state, Been_list, New_been_list),
-				stack(Name, Moves, New_moves),
+				stack(Name, Actions, New_actions),
 				partial_order(PreconditionsT, New_been_list, Time),
 				stack(Time, Times, New_Times),
-				plan(Child_state, Goal, New_been_list, New_moves, New_Times)
+				plan(Child_state, Goal, New_been_list, New_actions, New_Times)
 				.	
 
 change_state(S, [], S).
@@ -67,7 +68,8 @@ change_state(S, [add(P)|T], S_new) :-	change_state(S, T, S2),
 					add_to_set(P, S2, S_new), !.
 change_state(S, [del(P)|T], S_new) :-	change_state(S, T, S2),
 					remove_from_set(P, S2, S_new), !.
-change_state(S, [diff(A,B)|T], S) :- A \== B, change_state(S, T, S).
+				% change_state(S, [diff(A,B)|T], S) :- A \== B, change_state(S, T, S).
+
 
 conditions_met(P, S) :- subset(P, S).
 
@@ -85,42 +87,43 @@ reverse_print_stack(S) :- 	stack(E, Rest, S),
 				reverse_print_stack(Rest),
 		 		write(E), nl.
 
-reverse_print_moves_times(Moves, Times) :-
-				length_stack(Moves, Len), length_stack(Times, Len),
+reverse_print_actions_times(Actions, Times) :-
+				length_stack(Actions, Len), length_stack(Times, Len),
 				I is Len,
-				reverse_print_moves_times(Moves, Times, I).
+				reverse_print_actions_times(Actions, Times, I).
 
-reverse_print_moves_times(Moves, Times, _I) :-
-				empty_stack(Moves),
+reverse_print_actions_times(Actions, Times, _I) :-
+				empty_stack(Actions),
 				empty_stack(Times).
 
-reverse_print_moves_times(Moves, Times, I) :-
-				stack(M, TMoves, Moves), 
+reverse_print_actions_times(Actions, Times, I) :-
+				stack(M, TActions, Actions), 
 				stack(T, TTimes, Times),
 				NewI is I - 1,
-				reverse_print_moves_times(TMoves, TTimes, NewI),
+				reverse_print_actions_times(TActions, TTimes, NewI),
 				format("[~w]\t~w ~w~n", [I, M, T]).
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-move(
+action(
 			grip_ontable_start(A, B), 
 			[ontable(B, X, Y), available(A), clear(B)],
 			[gripped(_, B), gripping(_, B)],
 			[ontable(B, X, Y)],
 			[del(available(A)), add(gripping(A, B))]
 		).
-move(
+action(
 			grip_on_start(A, B), 
 			[on(B, B1, X, Y), available(A), clear(B)],
 			[gripped(_, B), gripping(_, B)],
 			[on(B, B1, X, Y)],
 			[del(available(A)), add(gripping(A, B))]
 		).
-move(
+action(
 			grip_end(A, B), 
 			[gripping(A, B)],
 			[notavalidpredicate(A)],
@@ -128,21 +131,21 @@ move(
 			[del(clear(B)), del(gripping(A, B)), add(gripped(A, B))]
 		).
  
-move(
+action(
 			move_block_on_start(A, B, X, Y, X1, Y1),
 			[gripped(A, B), on(B, B1, X, Y)],
 			[notavalidpredicate(A)],
 			[notavalidpredicate(A)],
 			[del(on(B, B1, X, Y)), add(clear(B1)), add(translating(A, B, X, Y, X1, Y1))]
 		).
-move(
+action(
 			move_block_ontable_start(A, B, X, Y, X1, Y1),
 			[gripped(A, B), ontable(B, X, Y)],
 			[notavalidpredicate(A)],
 			[notavalidpredicate(A)],
 			[del(ontable(B, X, Y)), add(translating(A, B, X, Y, X1, Y1))]
 		).
-move(
+action(
 			move_block_end(A, B, X, Y, X1, Y1),
 			[translating(A, B, X, Y, X1, Y1)],
 			[notavalidpredicate(A)],
@@ -172,15 +175,15 @@ move(
 	% 			[notavalidpredicate(A)],
 	% 			[del(releasing(A, B, X1, Y1)), del(gripped(A, B)), add(available(A)), add(ontable(B, X1, Y1)), add(clear(B))]
 	% 		).
- 
-move(
+
+action(
 			stack_start(A, B1, B2),
 			[moving(A, B1, X1, Y1), clear(B2)],
 			[gripping(_A, B2)],
 			[notavalidpredicate(A)],
 			[del(clear(B2)), del(moving(A, B1, X1, Y1)), add(stacking(A, B1, B2, X1, Y1))]
 		).
-move(
+action(
 			stack_end(A, B1, B2),
 			[stacking(A, B1, B2, X1, Y1)],
 			[notavalidpredicate(A)],
@@ -195,42 +198,42 @@ move(
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% move(
+%action(
 % 			grip_ontable(A, B), 
 % 			[ontable(B, X, Y), available(A), clear(B)],
 % 			[gripped(_A, B)],
 % 			[ontable(B, X, Y)],
 % 			[del(available(A)), del(clear(B)), add(gripped(A, B))]
 % 		).
-% move(
+%action(
 % 			grip_on(A, B), 
 % 			[on(B, B1, X, Y), available(A), clear(B)],
 % 			[gripped(_A, B)],
 % 			[on(B, B1, X, Y)],
 % 			[del(available(A)), del(clear(B)), add(gripped(A, B))]
 % 		).
-% move(
+%action(
 % 			move_block_on(A, B, X, Y, X1, Y1),
 % 			[gripped(A, B), on(B, B1, X, Y)],
 % 			[notavalidpredicate(A)],
 % 			[notavalidpredicate(A)],
 % 			[del(clear(B)), del(on(B, B1, X, Y)), add(clear(B1)), add(moving(A, B, X1, Y1))]
 % 		).
-% move(
+%action(
 % 			move_block_ontable(A, B, X, Y, X1, Y1),
 % 			[gripped(A, B), ontable(B, X, Y)],
 % 			[notavalidpredicate(A)],
 % 			[notavalidpredicate(A)],
 % 			[del(ontable(B, X, Y)), add(moving(A, B, X1, Y1))]
 % 		).
-% move(
+%action(
 % 			stack(A, B1, B2),
 % 			[moving(A, B1, X1, Y1), clear(B2)],
 % 			[gripping(_A, B2)],
 % 			[notavalidpredicate(A)],
 % 			[del(gripped(A, B1)), del(moving(A, B1, X1, Y1)), del(clear(B2)), add(available(A)), add(on(B1, B2, X1, Y1)), add(clear(B1))]
 % 		).
-% move(
+%action(
 % 			release(A, B),
 % 			[moving(A, B, X1, Y1)],
 % 			[notavalidpredicate(A)],
@@ -272,36 +275,3 @@ test4 :-  go(
 
 test :- test1.
 
-traverse_list([], Prev) :- write(Prev).
-traverse_list([X|Rest], Prev) :-
-	traverse_list(Rest, X),
-	write(Prev).
-
-traverse_list([X|Rest]) :- traverse_list(Rest, X).
-
-reverse_list([], []).
-reverse_list([X|T], Reversed) :-
-	reverse_list(T, ReversedRest),
-	append(ReversedRest, [X], Reversed).
-
-/* sample moves
-move(pickup(X), [handempty, clear(X), on(X, Y)], 
-		[del(handempty), del(clear(X)), del(on(X, Y)), 
-				 add(clear(Y)),	add(holding(X))]).
-
-move(pickup(X), [handempty, clear(X), ontable(X)], 
-		[del(handempty), del(clear(X)), del(ontable(X)), 
-				 add(holding(X))]).
-
-move(putdown(X), [holding(X)], 
-		[del(holding(X)), add(ontable(X)), add(clear(X)), 
-				  add(handempty)]).
-
-move(stack(X, Y), [holding(X), clear(Y)], 
-		[del(holding(X)), del(clear(Y)), add(handempty), add(on(X, Y)),
-				  add(clear(X))]).
-
-
-testold :- go([handempty, ontable(b), ontable(c), on(a, b), clear(c), clear(a)],
- 	          [handempty, ontable(c), on(a,b), on(b, c), clear(a)]).
-*/
