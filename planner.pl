@@ -153,7 +153,7 @@ action(
 			[del(translating(A, B, X, Y, X1, Y1)), add(moving(A, B, X1, Y1))]
 		).
 
-move(
+action(
 			release(A, B),
 			[moving(A, B, X1, Y1)],
 			[notavalidpredicate(A)],
@@ -161,14 +161,14 @@ move(
 			[del(gripped(A, B)), del(moving(A, B, X1, Y1)), add(available(A)), add(ontable(B, X1, Y1)), add(clear(B))]
 		).
 
-	% move(
+	% action(
 	% 			release_start(A, B),
 	% 			[moving(A, B, X1, Y1)],
 	% 			[notavalidpredicate(A)],
 	% 			[notavalidpredicate(A)],
 	% 			[del(moving(A, B, X1, Y1)), add(releasing(A, B, X1, Y1))]
 	% 		).
-	% move(
+	% action(
 	% 			release_end(A, B),
 	% 			[releasing(A, B, X1, Y1)],
 	% 			[notavalidpredicate(A)],
