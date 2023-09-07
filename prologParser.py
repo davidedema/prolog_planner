@@ -148,6 +148,18 @@ def createGraph(chunks):
                     if m and int(m['level']) - 1 == level:
                         succ = True
 
+        # Check if the action is not the last one
+        if not succ:
+            m = re.search("actions are", chunk)
+            if m:
+                print(chunk)
+                succ = True
+                m = re.search(r'Call:\s+\((?P<level>\d+)\)\s+plan\((?P<FS>\[.*\])\)', chunk)
+                if m and int(m['level']) == level:
+                    if m['FS']:
+                        FS = m['FS'].split('],')[0]
+
+
         m = re.search(initialStateRe, chunk)
         if m and level == int(m['level']):
             IS = m['IS']
@@ -223,53 +235,93 @@ def testCreateGraph():
     return G
     show(plot)
 
-def drawGraph(G):
+def newDrawGraph(G):
     from bokeh.plotting import figure, show
-    from bokeh.models import Circle, HoverTool, ColumnDataSource, MultiLine, LabelSet, HTMLLabelSet
+    from bokeh.models import Circle, HoverTool, ColumnDataSource, MultiLine, LabelSet, HTMLLabelSet, CustomJS
     from bokeh.transform import factor_cmap
     from bokeh.palettes import Category10
     from bokeh.models.annotations import Label, BoxAnnotation
 
-    # Extract node attributes
-    ISs = [node_data.get('IS', '') for node_data in G.nodes.values()]  # Default to 'blue' if 'color' not present
-    FSs = [node_data.get('FS', '') for node_data in G.nodes.values()]  # Default to 'blue' if 'color' not present
-    node_colors = [node_data.get('color', 'blue') for node_data in G.nodes.values()]  # Default to 'blue' if 'color' not present
-    node_labels = [node_data.get('label', '') for node_data in G.nodes.values()]  # Default to empty string if 'label' not present
-    node_titles = [node_data.get('title', '') for node_data in G.nodes.values()]  # Default to empty string if 'title' not present
-    # Calculate node sizes based on label lengths
-    label_lengths = [len(label) for label in node_labels]
-    x_offsets = [llabel/2 for llabel in label_lengths]
-    max_label_length = max(label_lengths)
-    min_node_size = 100  # Minimum node size
-    max_node_size = 250  # Maximum node size
-
-    # Scale node sizes proportionally to label lengths
-    node_sizes = [(size * max_node_size) / max_label_length if max_label_length > 0 else min_node_size for size in label_lengths]
-
-    # Extract edge endpoints
-    edge_start = [edge[0] for edge in G.edges]
-    edge_end = [edge[1] for edge in G.edges]
+    min_node_size = 70000  # Minimum node size
+    max_node_size = 10000  # Maximum node size
 
     # Create a Bokeh plot
     plot = figure(
-        width=3200, height=1200
+        width=2000, height=1200 
     )
 
     # Create a layout using from_networkx
     layout = nx.nx_agraph.graphviz_layout(G, prog="dot")  # You can use other layout algorithms as well
     # layout = nx.spring_layout(G)
 
+    # Extract edge endpoints
+    edge_start = [edge[0] for edge in G.edges]
+    edge_end = [edge[1] for edge in G.edges]
+
+    # Extract node attributes
+    Xs = {'S' : [], 'F' : []}
+    Ys = {'S' : [], 'F' : []}
+    ISs = {'S' : [], 'F' : []}
+    FSs = {'S' : [], 'F' : []}
+    node_labels = {'S' : [], 'F' : []}
+    node_titles = {'S' : [], 'F' : []}
+    node_colors = {'S' : [], 'F' : []}
+    label_lengths = {'S' : [], 'F' : []}
+    node_sizes = {'S' : [], 'F' : []}
+
+    print(type(layout.values()))
+    for pos in list(layout.values()):
+        print(pos)
+
+    for node in G.nodes:
+        print(node, G.nodes[node])
+        if G.nodes[node]['color'] == 'blue':
+            pos = list(layout.values())[node]
+            Xs['S'].append(pos[0])
+            Ys['S'].append(pos[1])
+            ISs['S'].append(G.nodes[node].get('IS', ''))
+            FSs['S'].append(G.nodes[node].get('FS', ''))
+            node_labels['S'].append(G.nodes[node].get('label', ''))
+            node_titles['S'].append(G.nodes[node].get('title', ''))
+            node_colors['S'].append('blue')
+            label_lengths['S'].append(len(node_labels['S'][-1]))
+        else:
+            pos = list(layout.values())[node]
+            Xs['F'].append(pos[0])
+            Ys['F'].append(pos[1])
+            ISs['F'].append(G.nodes[node].get('IS', ''))
+            FSs['F'].append('')
+            node_labels['F'].append(G.nodes[node].get('label', ''))
+            node_titles['F'].append(G.nodes[node].get('title', ''))
+            node_colors['F'].append('red')
+            label_lengths['F'].append(len(node_labels['F'][-1]))
+
+    for labelLen in label_lengths['S']:
+        node_sizes['S'].append((labelLen/max_node_size)*min_node_size)
+    for labelLen in label_lengths['F']:
+        node_sizes['F'].append((labelLen/max_node_size)*min_node_size)
+
     # Create a data source for nodes
-    node_source = ColumnDataSource(data=dict(
-        x=[pos[0] for pos in layout.values()],
-        y=[pos[1] for pos in layout.values()],
-        colors=node_colors,
-        labels=node_labels,
-        titles=node_titles,
-        ISs=ISs,
-        FSs=FSs,
-        sizes=node_sizes,
-        x_offsets = x_offsets,
+    node_source_succ = ColumnDataSource(data=dict(
+        x=Xs['S'],
+        y=Ys['S'],
+        colors=node_colors['S'],
+        labels=node_labels['S'],
+        titles=node_titles['S'],
+        ISs=ISs['S'],
+        FSs=FSs['S'],
+        sizes=node_sizes['S'],
+    ))
+
+    node_source_fail = ColumnDataSource(data=dict(
+        x=Xs['F'],
+        y=Ys['F'],
+        colors=node_colors['F'],
+        labels=node_labels['F'],
+        titles=node_titles['F'],
+        ISs=ISs['F'],
+        FSs=FSs['F'],
+        sizes=node_sizes['F'],
     ))
 
     # Create a data source for edges
@@ -278,15 +330,19 @@ def drawGraph(G):
         ys=[[layout[start][1], layout[end][1]] for start, end in zip(edge_start, edge_end)]
     ))
 
-    # Define a categorical color mapper based on the 'color' attribute
-    color_mapper = factor_cmap(field_name='colors', palette=Category10[10], factors=list(set(node_colors)))
-
     # Customize node rendering with dynamically calculated sizes
-    nodes = plot.ellipse('x', 'y', width='sizes', height=1, source=node_source, color=color_mapper, legend_field='labels')
+    nodes_succ = plot.ellipse('x', 'y', width='sizes', height=7, source=node_source_succ, color='white', legend_field='labels')
 
     # Display 'label' attribute inside the nodes using LabelSet
-    labels = HTMLLabelSet(x='x', y='y', text='labels', source=node_source, level='glyph',
-                      text_align = 'center', text_baseline='middle', text_color='black')
+    labels_succ = HTMLLabelSet(x='x', y='y', text='labels', source=node_source_succ, level='glyph',
+                      text_align = 'center', text_baseline='middle', text_color='blue')
+
+    # Customize node rendering with dynamically calculated sizes
+    nodes_fail = plot.ellipse('x', 'y', width='sizes', height=7, source=node_source_fail, color='white', legend_field='labels')
+
+    # Display 'label' attribute inside the nodes using LabelSet
+    labels_fail = HTMLLabelSet(x='x', y='y', text='labels', source=node_source_fail, level='glyph',
+                      text_align = 'center', text_baseline='middle', text_color='red')
 
     # Customize edge rendering
     edges = plot.multi_line('xs', 'ys', source=edge_source, line_color='gray', line_width=1)
@@ -304,9 +360,9 @@ def drawGraph(G):
     # Hide Bokeh axes and grid
     plot.axis.visible = False
     plot.grid.visible = False
-
+    
     # Add nodes, labels, and edge to the same renderers list to ensure proper layering
-    plot.renderers.extend([nodes, labels, edges])
+    plot.renderers.extend([nodes_succ, nodes_fail, labels_succ, labels_fail, edges])
 
     # Show the plot
     show(plot)
@@ -315,7 +371,7 @@ def drawGraph(G):
 def main():
     readFile("file.txt")
     G = createGraph(chunks)
-    drawGraph(G)
+    newDrawGraph(G)
 
     #test()
 
