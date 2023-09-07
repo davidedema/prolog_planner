@@ -55,21 +55,32 @@ plan(State, Goal, Been_list, Actions, Times) :-
 				conditions_not_met(PreconditionsF, State),
 				conditions_not_met(FinalConditionsF, Goal),
 				change_state(State, Effects, Child_state),
+				testPlan(Child_state, Goal, Been_list, Name, Actions, PreconditionsT, Times)
+				.	
+
+testPlan(Child_state, Goal, Been_list, Name, Actions, PreconditionsT, Times) :-
+				\+equal_set(Child_state, Goal),
 				not(member_state(Child_state, Been_list)),
 				stack(Child_state, Been_list, New_been_list),
 				stack(Name, Actions, New_actions),
 				partial_order(PreconditionsT, New_been_list, Time),
 				stack(Time, Times, New_Times),
-				plan(Child_state, Goal, New_been_list, New_actions, New_Times)
-				.	
+				plan(Child_state, Goal, New_been_list, New_actions, New_Times).
+
+testPlan(Child_state, Goal, Been_list, Name, Actions, PreconditionsT, Times) :-
+				equal_set(Child_state, Goal),
+				stack(Child_state, Been_list, New_been_list),
+				stack(Name, Actions, New_actions),
+				partial_order(PreconditionsT, New_been_list, Time),
+				stack(Time, Times, New_Times),
+				plan(Child_state, Goal, New_been_list, New_actions, New_Times).
+
 
 change_state(S, [], S).
 change_state(S, [add(P)|T], S_new) :-	change_state(S, T, S2),
 					add_to_set(P, S2, S_new), !.
 change_state(S, [del(P)|T], S_new) :-	change_state(S, T, S2),
 					remove_from_set(P, S2, S_new), !.
-				% change_state(S, [diff(A,B)|T], S) :- A \== B, change_state(S, T, S).
-
 
 conditions_met(P, S) :- subset(P, S).
 
@@ -153,28 +164,28 @@ action(
 			[del(translating(A, B, X, Y, X1, Y1)), add(moving(A, B, X1, Y1))]
 		).
 
-action(
-			release(A, B),
-			[moving(A, B, X1, Y1)],
-			[notavalidpredicate(A)],
-			[notavalidpredicate(A)],
-			[del(gripped(A, B)), del(moving(A, B, X1, Y1)), add(available(A)), add(ontable(B, X1, Y1)), add(clear(B))]
-		).
-
 	% action(
-	% 			release_start(A, B),
+	% 			release(A, B),
 	% 			[moving(A, B, X1, Y1)],
 	% 			[notavalidpredicate(A)],
 	% 			[notavalidpredicate(A)],
-	% 			[del(moving(A, B, X1, Y1)), add(releasing(A, B, X1, Y1))]
+	% 			[del(gripped(A, B)), del(moving(A, B, X1, Y1)), add(available(A)), add(ontable(B, X1, Y1)), add(clear(B))]
 	% 		).
-	% action(
-	% 			release_end(A, B),
-	% 			[releasing(A, B, X1, Y1)],
-	% 			[notavalidpredicate(A)],
-	% 			[notavalidpredicate(A)],
-	% 			[del(releasing(A, B, X1, Y1)), del(gripped(A, B)), add(available(A)), add(ontable(B, X1, Y1)), add(clear(B))]
-	% 		).
+
+	action(
+				release_start(A, B),
+				[moving(A, B, X1, Y1)],
+				[notavalidpredicate(A)],
+				[notavalidpredicate(A)],
+				[del(moving(A, B, X1, Y1)), add(releasing(A, B, X1, Y1))]
+			).
+	action(
+				release_end(A, B),
+				[releasing(A, B, X1, Y1)],
+				[notavalidpredicate(A)],
+				[notavalidpredicate(A)],
+				[del(releasing(A, B, X1, Y1)), del(gripped(A, B)), add(available(A)), add(ontable(B, X1, Y1)), add(clear(B))]
+			).
 
 action(
 			stack_start(A, B1, B2),
@@ -248,29 +259,69 @@ action(
 
 go(S, G) :- plan(S, G, [S], [], []).
 
-% From b1, b2 on the table to b2,b1 stacked.
+% from b1, b2 on the table to b2,b1 stacked.
+test01 :- go(
+						[available(a1), available(a2), ontable(b1, 2, 2), clear(b1)],
+ 	          [available(a1), available(a2), ontable(b1, 3, 3), clear(b1)]
+ 	        ).
+
+test0 :- go(
+						[available(a1), ontable(b1, 2, 2), clear(b1)],
+ 	          [available(a1), ontable(b1, 3, 3), clear(b1)]
+ 	        ).
+
 test1 :- go(
 						[available(a1), available(a2), ontable(b1, 2, 2), ontable(b2, 1, 1), clear(b1), clear(b2)],
  	          [available(a1), available(a2), ontable(b2, 3, 3), on(b1, b2, 3, 3), clear(b1)]
  	        ).
 
-% From b2,b1 stacked to b1, b2 on the table.
+% from b2,b1 stacked to b1, b2 on the table.
 test2 :- go(
 						[available(a1), available(a2), available(a3), ontable(b2, 1, 1), on(b1, b2, 1, 1), clear(b1)],
  	          [available(a1), available(a2), available(a3), ontable(b1, 2, 2), ontable(b2, 3, 3), clear(b1), clear(b2)]
  	        ).
 
-% From b2,b1 stacked and b3 on the table to b1,b2,b3 stacked.
+% from b2,b1 stacked and b3 on the table to b1,b2,b3 stacked.
 test3 :- go(
  	          [available(a1), available(a2), available(a3), ontable(b2, 1, 1), on(b1, b2, 1, 1), clear(b1), ontable(b3, 2, 2), clear(b3)],
 						[available(a1), available(a2), available(a3), ontable(b1, 3, 3), on(b2, b1, 3, 3), on(b3, b2, 3, 3), clear(b3)]
  	        ).
 
-% From b1,b2,b3 stacked to b1,b3 stacked and b2 on the table
+% from b1,b2,b3 stacked to b1,b3 stacked and b2 on the table
+test4 :-  go(
+							[available(a1), available(a2), available(a3), ontable(b1, 1, 1), on(b2, b1, 1, 1), on(b3, b2, 1, 1), clear(b3)],
+							[available(a1), available(a2), available(a3), ontable(b1, 1, 1), on(b3, b1, 1, 1), ontable(b2, 2, 2), clear(b2), clear(b3)]
+						).
+
+test :- test0.
+
+
+/*
+Consider the following test cases. Each of them moves a set of boxes (b1, b2, b3, ...) from an initial state to a final state using agents (a1, a2, ...).
+
+% from b1, b2 on the table to b2,b1 stacked.
+test1 :- go(
+						[available(a1), available(a2), available(a3), ontable(b1, 2, 2), ontable(b2, 1, 1), clear(b1), clear(b2)],
+ 	          [available(a1), available(a2), available(a3), ontable(b2, 3, 3), on(b1, b2, 3, 3), clear(b1)]
+ 	        ).
+
+% from b2,b1 stacked to b1, b2 on the table.
+test2 :- go(
+						[available(a1), available(a2), available(a3), ontable(b2, 1, 1), on(b1, b2, 1, 1), clear(b1)],
+ 	          [available(a1), available(a2), available(a3), ontable(b1, 2, 2), ontable(b2, 3, 3), clear(b1), clear(b2)]
+ 	        ).
+
+% from b2,b1 stacked and b3 on the table to b1,b2,b3 stacked.
+test3 :- go(
+ 	          [available(a1), available(a2), available(a3), ontable(b2, 1, 1), on(b1, b2, 1, 1), clear(b1), ontable(b3, 2, 2), clear(b3)],
+						[available(a1), available(a2), available(a3), ontable(b1, 3, 3), on(b2, b1, 3, 3), on(b3, b2, 3, 3), clear(b3)]
+ 	        ).
+
+% from b1,b2,b3 stacked to b1,b3 stacked and b2 on the table
 test4 :-  go(
 							[availble(a1), available(a2), availble(a3), ontable(b1, 1, 1), on(b2, b1, 1, 1), on(b3, b2, 1, 1), clear(b3)],
 							[availble(a1), available(a2), availble(a3), ontable(b1, 1, 1), on(b3, b1, 1, 1), ontable(b2, 2, 2), clear(b2), clear(b3)]
 						).
 
-test :- test1.
-
+Can you provide a new test case, namely test_case, in which we use 3 agents to move four boxes on the table (you choose their positions) to a final stack [b1,b2,b3,b4], which is ordered from top to bottom?
+*/
