@@ -83,7 +83,7 @@ plan(State, Goal, _, Actions, Times) :-
 	.
 
 plan(State, Goal, Been_list, Actions, Times) :- 	
-	length(Actions, Len), Len < 7,
+	%length(Actions, Len), Len < 13,
 	action(Name, PreconditionsT, PreconditionsF, FinalConditionsF, Effects, Verify),
 	verify(Verify),
 	conditions_met(PreconditionsT, State),
@@ -162,34 +162,67 @@ diffPos(X, X1, Y, Y1) :-
 	X == X1, Y == Y1, fail.
 
 action(
+	grip_on_start(A, B), 
+	[on(B, B1, X, Y), available(A), clear(B)],
+	[gripped(_, B), gripping(_, B)],
+	[on(B, B1, X, Y)],
+	[del(available(A)), add(gripping(A, B))],
+	[]
+).
+action(
+	grip_ontable_start(A, B), 
+	[ontable(B, X, Y), available(A), clear(B)],
+	[gripped(_, B), gripping(_, B)],
+	[ontable(B, X, Y)],
+	[del(available(A)), add(gripping(A, B))],
+	[]
+).
+action(
+	grip_buffer_start(A, B), 
+	[buffer(B, _X, _Y), available(A), clear(B)],
+	[gripped(_, B), gripping(_, B)],
+	[],
+	[del(available(A)), add(gripping(A, B))],
+	[]
+).
+action(
+	grip_end(A, B), 
+	[gripping(A, B)],
+	[notavalidpredicate(A)],
+	[notavalidpredicate(A)],
+	[del(clear(B)), del(gripping(A, B)), add(gripped(A, B))],
+	[]
+).
+
+action(
 	move_block_on_start(A, B, X, Y, X1, Y1),
-	[on(B, B1, X, Y), clear(B), available(A)],
+	[gripped(A, B), on(B, B1, X, Y)],
 	[],
 	[],
 	[
-		del(on(B, B1, X, Y)), del(clear(B)), del(available(A)), 
+		del(on(B, B1, X, Y)),
 		add(clear(B1)), add(moving(A, B, X, Y, X1, Y1))
 	],
 	[]
 ).
 action(
 	move_block_ontable_start(A, B, X, Y, X1, Y1),
-	[ontable(B, X, Y), clear(B), available(A)],
+	[ontable(B, X, Y), gripped(A, B)],
 	[],
 	[],
 	[
-		del(ontable(B, X, Y)), del(clear(B)), del(available(A)), 
+		del(ontable(B, X, Y)) ,
 		add(moving(A, B, X, Y, X1, Y1))
 	],
 	[]
 ).
 action(
 	move_block_buffer_start(A, B, X, Y, X1, Y1),
-	[buffer(B, X, Y), clear(B), available(A)],
+	[buffer(B, X, Y), gripped(A, B)],
 	[],
 	[],
 	[
-		del(available(A)), del(buffer(B, X, Y)), del(clear(B)),
+		del(buffer(B, X, Y)),
 		add(moving(A, B, X, Y, X1, Y1))
 	],
 	[]
@@ -197,33 +230,33 @@ action(
 
 action(
 	move_block_to_table_end(A, B, X, Y, X1, Y1),
-	[moving(A, B, X, Y, X1, Y1)],
+	[gripped(A, B), moving(A, B, X, Y, X1, Y1)],
 	[],
 	[],
 	[
-		del(moving(A, B, X, Y, X1, Y1)), 
+		del(moving(A, B, X, Y, X1, Y1)), del(gripped(A, B)),
 		add(available(A)), add(ontable(B, X1, Y1)), add(clear(B))
 	],
 	[ontable(B, X1, Y1), diffPos(X, X1, Y, Y1)]
 ).
 action(
 	move_block_to_on_end(A, B, X, Y, X1, Y1),
-	[moving(A, B, X, Y, X1, Y1), clear(B1)],
+	[gripped(A, B), moving(A, B, X, Y, X1, Y1), clear(B1)],
 	[],
 	[],
 	[
-		del(moving(A, B, X, Y, X1, Y1)), del(clear(B1)),
+		del(moving(A, B, X, Y, X1, Y1)), del(clear(B1)), del(gripped(A, B)),
 		add(available(A)), add(on(B, B1, X1, Y1)), add(clear(B))
 	],
 	[on(B, B1, X1, Y1), diffPos(X, X1, Y, Y1)]
 ).
 action(
 	move_block_to_buffer_end(A, B, X, Y, X1, Y1),
-	[moving(A, B, X, Y, X1, Y1)],
+	[gripped(A, B), moving(A, B, X, Y, X1, Y1)],
 	[buffer(_B, X1, Y1)],
 	[],
 	[
-		del(moving(A, B, X, Y, X1, Y1)),
+		del(moving(A, B, X, Y, X1, Y1)), del(gripped(A, B)),
 		add(buffer(B, X1, Y1)), add(clear(B)), add(available(A))
 	],
 	[pos(X1, Y1), diffPos(X, X1, Y, Y1)]
