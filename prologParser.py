@@ -6,7 +6,7 @@ from bokeh.plotting import figure, from_networkx, show
 
 chunks = []
 
-moveRe = r'.*action\((?P<action>[a-zA-Z\_]+)\(.*'
+moveRe = r'.*Exit.*action\((?P<action>[a-zA-Z\_]+)\(.*'
 succRe = r':\s\(\d+\)\sstack\(.+\)'
 addedActionsRe = r'stack\([a-zA-Z]+\(.*\), \[.*\], \[(?P<newActions>.*)\])'
 newPlanRe = r'Call: \(\d+\) plan\(\[(?P<newState>[^\[\]]*)\],\s\[.*\],\s\[.*\],\s\[.*\]\)'
@@ -83,31 +83,28 @@ def readFile(filename):
 
     chunks = chunks[1:]
 
-def add_edge (G, parent, lastLevel, level, nodeId):
-    if  lastLevel == 0 or lastLevel == level - 1:
-        print("Adding edge between", parent[0], "and", nodeId[0])
-        G.add_edge(parent, nodeId)
-        lastLevel = level
-        parent = nodeId
-
-    else: # lastLevel > level - 1:
-        parent = G.nodes[parent]['parent']
-        add_ege(G, parent, lastLevel, level)
-
 
 actionRe = r'Exit:\s+\((?P<level>\d+)\)\s+action\((?P<actionName>[a-zA-Z_]+)\(.*'
 actionArgsRe = r'Call:\s+\((?P<level>\d+)\)\s+stack\({}\((?P<args>([^\[\]]*))\).*\)'
 initialStateRe = r'Call:\s+\((?P<level>\d+)\)\s+conditions_met\(\[.*\],\s*(?P<IS>\[.*\])\)'
-finalStateRe = r'Redo:\s+\((?P<level>\d+)\)\s+plan\((?P<FS>\[.*\])\)'
+finalStateRe = r'Call:\s+\((?P<level>\d+)\)\s+plan\((?P<FS>\[.*\])\)'
 
 def createGraph(chunks):
     G = nx.DiGraph()
     G.add_nodes_from([(0, {'label' : "init", 'color' : 'blue', 'parent' : -1, 'level' : 0, 'title' : 'init'})])
     parent = 0
     n = 0
-    for chunk in chunks:
-        if G.nodes[parent]['level'] == 18: 
-            break
+    for chk in chunks:
+        chunk = ""
+        if re.search(r'[\sa-zA-Z]+\[\d+\]\s+((Exit)|(Call)|(Fail)):', chk):
+            lines = chk.split('\n')
+            for line in lines:
+                m = re.search(r'[\sa-zA-Z]+\[(?P<level>\d+)\]\s+(?P<result>(Redo:)|(Exit:)|(Call:)|(Fail:))(?P<rest>.*)', line)
+                if m:
+                    newline = "{} ({}){}\n".format(m['result'], m['level'], m['rest'])
+                    chunk+=newline
+        else:
+            chunk = chk
 
         actionName = ""
         level = 0
@@ -124,38 +121,36 @@ def createGraph(chunks):
             print(chunk)
             raise Exception("Could not parse actionName")
 
-        m = re.search(actionArgsRe.format(actionName), chunk)
-        if m:
-            if int(m['level']) != level:
-                raise Exception("Level error in this chunk")
-            arguments = m['args']
-
         # To check success I'll check that plan is called twice and that the last line is action with a higher level. 
         lines = chunk.split('\n')
         
-        if len(lines) > 3: 
-            if lines[-1].strip() == "":
-                lines = lines[-4:]
-            else:
-                lines = lines[-3:]
-            m = re.search(r'Call:\s+\((?P<level>\d+)\)\s+plan\(.*', lines[0])
-            if m and int(m['level']) == level:
-                m = re.search(finalStateRe, lines[1])
-                if m and int(m['level']) == level:
-                    if m['FS']:
+        index = 0
+        while index < len(lines) and not succ:
+            m = re.search(r'Call:\s+\((?P<level>\d+)\) stack\(.*\)', lines[index])
+            if m:
+                index += 1
+                m = re.search(r'Exit:\s+\((?P<level>\d+)\) stack\(.*\)', lines[index])
+                if m:
+                    index += 1
+                    m = re.search(finalStateRe, lines[index])
+                    if m:
                         FS = m['FS'].split('],')[0]
-                    m = re.search(r'Call:\s+\((?P<level>\d+)\)\s+action\(.*', lines[2])
-                    if m and int(m['level']) - 1 == level:
                         succ = True
+            index += 1
+
+        if succ:
+            m = re.search(actionArgsRe.format(actionName), chunk)
+            if m:
+                arguments = m['args']
+
 
         # Check if the action is not the last one
         if not succ:
             m = re.search("actions are", chunk)
             if m:
-                print(chunk)
                 succ = True
                 m = re.search(r'Call:\s+\((?P<level>\d+)\)\s+plan\((?P<FS>\[.*\])\)', chunk)
-                if m and int(m['level']) == level:
+                if m:
                     if m['FS']:
                         FS = m['FS'].split('],')[0]
 
@@ -164,8 +159,9 @@ def createGraph(chunks):
         if m and level == int(m['level']):
             IS = m['IS']
         else:
+            IS = "Could not verify ground conditions"
             print(chunk)
-            raise Exception("Cannot parse IS for the above chunk")
+            print("Cannot parse IS for the above chunk")
 
         nodeId = len(G.nodes)
         G.add_nodes_from([(
@@ -186,54 +182,11 @@ def createGraph(chunks):
             parent = G.nodes[parent]['parent']
             lastLevel = G.nodes[parent]['level']
 
-        if lastLevel == 0 or lastLevel == level - 1:
-            print("Adding edge between", parent, "and", nodeId)
-            G.add_edge(parent, nodeId)
-            lastLevel = level
-            parent = nodeId
+        G.add_edge(parent, nodeId)
+        parent = nodeId
 
     return G
 
-    # graph_renderer = from_networkx(G, nx.nx_agraph.graphviz_layout(G, prog="dot"))
-
-    # color_mapper = linear_cmap(field_name='index', palette=Viridis256, low = 0, high = 1)
-    # graph_renderer.node_renderer.glyph = Circle(size=15, fill_color=color_mapper)
-    # graph_renderer.node_renderer.data_source.data['index'] = list(reversed(range(len(G))))
-    # graph_renderer.node_renderer.data_source.data['colors'] = node_colors
-    # plot.renderers.append(graph_renderer)
-    # show(plot)
-
-
-    # # networkx X matplotlib
-    # plt.figure(figsize=(120,120))
-    # nx.draw(G, 
-    #         with_labels = True, 
-    #         pos = nx.nx_agraph.graphviz_layout(G, prog="twopi"),
-    #         labels = labels, 
-    #         node_color = colors, 
-    #         node_shape='s', 
-    #         node_size = sizes,
-    #         font_size = 4
-    # )
-    # plt.savefig("graph.png", dpi=200)
-
-    # # pyvis 
-    # from pyvis.network import Network
-    # net = Network(notebook = True)
-    # net.from_nx(G)
-    # net.show('example.html')
-
-def testCreateGraph():
-    # Create a sample NetworkX graph with node attributes
-    G = nx.Graph()
-    G.add_node(1, color='red', label='Node 1', title='This is Node 1')
-    G.add_node(2, color='blue', label='Node 2', title='This is Node 2')
-    G.add_node(3, color='green', label='Node 3', title='This is Node 3')
-    G.add_edge(1, 2)
-    G.add_edge(1, 3)
-    
-    return G
-    show(plot)
 
 def newDrawGraph(G):
     from bokeh.plotting import figure, show
@@ -247,7 +200,7 @@ def newDrawGraph(G):
 
     # Create a Bokeh plot
     plot = figure(
-        width=2000, height=1200 
+        width=1600, height=1200 
     )
 
     # Create a layout using from_networkx
@@ -269,12 +222,7 @@ def newDrawGraph(G):
     label_lengths = {'S' : [], 'F' : []}
     node_sizes = {'S' : [], 'F' : []}
 
-    print(type(layout.values()))
-    for pos in list(layout.values()):
-        print(pos)
-
     for node in G.nodes:
-        print(node, G.nodes[node])
         if G.nodes[node]['color'] == 'blue':
             pos = list(layout.values())[node]
             Xs['S'].append(pos[0])

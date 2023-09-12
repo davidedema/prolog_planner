@@ -29,6 +29,7 @@
 :- dynamic on/4.
 :- dynamic clear/1.
 :- dynamic pos/2.
+:- discontiguous action/6.
 
 pos(1,2).
 pos(1,3).
@@ -74,7 +75,7 @@ verify([H|T]) :-
 	verify(T),
 	H.
 
-plan(State, Goal, _, Actions, Times) :- 	
+plan(State, Goal, _, Actions, Times, _MaxDepth) :- 	
 	equal_set(State, Goal),
 	write('actions are'), nl,
 	%reverse_print_stack(Actions),
@@ -82,33 +83,33 @@ plan(State, Goal, _, Actions, Times) :-
 	%true
 	.
 
-plan(State, Goal, Been_list, Actions, Times) :- 	
-	%length(Actions, Len), Len < 13,
+plan(State, Goal, Been_list, Actions, Times, MaxDepth) :- 	
+	length(Actions, Len), Len < MaxDepth,
 	action(Name, PreconditionsT, PreconditionsF, FinalConditionsF, Effects, Verify),
 	verify(Verify),
 	conditions_met(PreconditionsT, State),
 	conditions_not_met(PreconditionsF, State),
 	conditions_not_met(FinalConditionsF, Goal),
 	change_state(State, Effects, Child_state),
-	testPlan(Child_state, Goal, Been_list, Name, Actions, PreconditionsT, Times)
+	testPlan(Child_state, Goal, Been_list, Name, Actions, PreconditionsT, Times, MaxDepth)
 	.	
 
-testPlan(Child_state, Goal, Been_list, Name, Actions, PreconditionsT, Times) :-
+testPlan(Child_state, Goal, Been_list, Name, Actions, PreconditionsT, Times, MaxDepth) :-
 	\+equal_set(Child_state, Goal),
 	not(member_state(Child_state, Been_list)),
 	stack(Child_state, Been_list, New_been_list),
 	stack(Name, Actions, New_actions),
 	partial_order(PreconditionsT, New_been_list, Time),
 	stack(Time, Times, New_Times),
-	plan(Child_state, Goal, New_been_list, New_actions, New_Times).
+	plan(Child_state, Goal, New_been_list, New_actions, New_Times, MaxDepth).
 
-testPlan(Child_state, Goal, Been_list, Name, Actions, PreconditionsT, Times) :-
+testPlan(Child_state, Goal, Been_list, Name, Actions, PreconditionsT, Times, MaxDepth) :-
 	equal_set(Child_state, Goal),
 	stack(Child_state, Been_list, New_been_list),
 	stack(Name, Actions, New_actions),
 	partial_order(PreconditionsT, New_been_list, Time),
 	stack(Time, Times, New_Times),
-	plan(Child_state, Goal, New_been_list, New_actions, New_Times).
+	plan(Child_state, Goal, New_been_list, New_actions, New_Times, MaxDepth).
 
 change_state(S, [], S).
 change_state(S, [add(P)|T], S_new) :-	
@@ -195,8 +196,32 @@ action(
 ).
 
 action(
+	release_start(A, B),
+	[moved(A, B, X, Y, X1, Y1), gripped(A, B)],
+	[],
+	[],
+	[
+		del(moved(A, B, X, Y, X1, Y1)), del(gripped(A, B)),
+		add(releasing(A, B))
+	],
+	[]
+).
+
+action(
+	release_end(A, B),
+	[releasing(A, B)],
+	[],
+	[],
+	[
+		del(releasing(A, B)),
+		add(clear(B)), add(available(A))
+	],
+	[]
+).
+
+action(
 	move_block_on_start(A, B, X, Y, X1, Y1),
-	[gripped(A, B), on(B, B1, X, Y)],
+	[on(B, B1, X, Y)],
 	[],
 	[],
 	[
@@ -230,37 +255,51 @@ action(
 
 action(
 	move_block_to_table_end(A, B, X, Y, X1, Y1),
-	[gripped(A, B), moving(A, B, X, Y, X1, Y1)],
+	[moving(A, B, X, Y, X1, Y1)],
 	[],
 	[],
 	[
-		del(moving(A, B, X, Y, X1, Y1)), del(gripped(A, B)),
-		add(available(A)), add(ontable(B, X1, Y1)), add(clear(B))
+		del(moving(A, B, X, Y, X1, Y1)),
+		add(ontable(B, X1, Y1)), add(moved(A, B, X, Y, X1, Y1))
 	],
 	[ontable(B, X1, Y1), diffPos(X, X1, Y, Y1)]
 ).
 action(
 	move_block_to_on_end(A, B, X, Y, X1, Y1),
-	[gripped(A, B), moving(A, B, X, Y, X1, Y1), clear(B1)],
+	[moving(A, B, X, Y, X1, Y1), clear(B1)],
 	[],
 	[],
 	[
-		del(moving(A, B, X, Y, X1, Y1)), del(clear(B1)), del(gripped(A, B)),
-		add(available(A)), add(on(B, B1, X1, Y1)), add(clear(B))
+		del(moving(A, B, X, Y, X1, Y1)), del(clear(B1)),
+		add(on(B, B1, X1, Y1)), add(moved(A, B, X, Y, X1, Y1))
 	],
 	[on(B, B1, X1, Y1), diffPos(X, X1, Y, Y1)]
 ).
 action(
 	move_block_to_buffer_end(A, B, X, Y, X1, Y1),
-	[gripped(A, B), moving(A, B, X, Y, X1, Y1)],
+	[moving(A, B, X, Y, X1, Y1)],
 	[buffer(_B, X1, Y1)],
 	[],
 	[
-		del(moving(A, B, X, Y, X1, Y1)), del(gripped(A, B)),
-		add(buffer(B, X1, Y1)), add(clear(B)), add(available(A))
+		del(moving(A, B, X, Y, X1, Y1)),
+		add(buffer(B, X1, Y1)), add(moved(A, B, X, Y, X1, Y1))
 	],
 	[pos(X1, Y1), diffPos(X, X1, Y, Y1)]
 ).
+
+
+test_plan_result(R, _S, _G, _StateList, _Actions, _Times, _MaxTime) :-
+	R.
+test_plan_result(R, S, G, _StateList, _Actions, _Times, MaxTime) :-
+	\+ R,
+	try_plan(S, G, [S], [], [], MaxTime).
+
+try_plan(S, G, StateList, Actions, Times, MaxTime) :-
+	NewMaxTime is MaxTime + 10, 
+	write("Testing for "), write(NewMaxTime), nl,
+	NewMaxTime < 50,
+	(plan(S, G, StateList, Actions, Times, NewMaxTime) -> Res = true; Res = false),
+	test_plan_result(Res, S, G, StateList, Actions, Times, NewMaxTime).
 
 go(S, G) :- 
 	retractall(ontable(_, _, _)),
@@ -268,7 +307,8 @@ go(S, G) :-
 	retractall(clear(_)),
 	retractall(available(_)),
 	ground_g(G), 
-	plan(S, G, [S], [], []).
+	plan(S, G, [S], [], [], 20).
+%try_plan(S, G, [S], [], [], 0).
 
 % from b1, b2 on the table to b2,b1 stacked.
 test01 :- go(
@@ -314,7 +354,7 @@ test6 :-  go(
 							[available(a1), ontable(b1, 2, 2), on(b2, b1, 2, 2), clear(b2)]
 						).
 
-test :- test6. 
+test :- test0. 
 testNoTrace :- test. 
 testTrace :- leash(-all), trace, testNoTrace. 
 
@@ -329,3 +369,39 @@ testSmallTrace :-
 	trace(stack, all),
 	test.
 
+
+/*
+action(
+	move_block_to_table_end(A, B, X, Y, X1, Y1),
+	[gripped(A, B), moving(A, B, X, Y, X1, Y1)],
+	[],
+	[],
+	[
+		del(moving(A, B, X, Y, X1, Y1)), del(gripped(A, B)),
+		add(available(A)), add(ontable(B, X1, Y1)), add(clear(B))
+	],
+	[ontable(B, X1, Y1), diffPos(X, X1, Y, Y1)]
+).
+action(
+	move_block_to_on_end(A, B, X, Y, X1, Y1),
+	[gripped(A, B), moving(A, B, X, Y, X1, Y1), clear(B1)],
+	[],
+	[],
+	[
+		del(moving(A, B, X, Y, X1, Y1)), del(clear(B1)), del(gripped(A, B)),
+		add(available(A)), add(on(B, B1, X1, Y1)), add(clear(B))
+	],
+	[on(B, B1, X1, Y1), diffPos(X, X1, Y, Y1)]
+).
+action(
+	move_block_to_buffer_end(A, B, X, Y, X1, Y1),
+	[gripped(A, B), moving(A, B, X, Y, X1, Y1)],
+	[buffer(_B, X1, Y1)],
+	[],
+	[
+		del(moving(A, B, X, Y, X1, Y1)), del(gripped(A, B)),
+		add(buffer(B, X1, Y1)), add(clear(B)), add(available(A))
+	],
+	[pos(X1, Y1), diffPos(X, X1, Y, Y1)]
+).
+*/
