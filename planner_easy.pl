@@ -75,7 +75,7 @@ verify([H|T]) :-
 	verify(T),
 	H.
 
-plan(State, Goal, _, Actions, Times, _MaxDepth) :- 	
+plan(State, Goal, _, Actions, Times, _MaxDepth, Actions, Times) :- 	
 	equal_set(State, Goal),
 	write('actions are'), nl,
 	%reverse_print_stack(Actions),
@@ -83,7 +83,7 @@ plan(State, Goal, _, Actions, Times, _MaxDepth) :-
 	%true
 	.
 
-plan(State, Goal, Been_list, Actions, Times, MaxDepth) :- 	
+plan(State, Goal, Been_list, Actions, Times, MaxDepth, RetActions, RetTimes) :- 	
 	length(Actions, Len), Len < MaxDepth,
 	action(Name, PreconditionsT, PreconditionsF, FinalConditionsF, Effects, Verify),
 	verify(Verify),
@@ -91,25 +91,25 @@ plan(State, Goal, Been_list, Actions, Times, MaxDepth) :-
 	conditions_not_met(PreconditionsF, State),
 	conditions_not_met(FinalConditionsF, Goal),
 	change_state(State, Effects, Child_state),
-	testPlan(Child_state, Goal, Been_list, Name, Actions, PreconditionsT, Times, MaxDepth)
+	testPlan(Child_state, Goal, Been_list, Name, Actions, PreconditionsT, Times, MaxDepth, RetActions, RetTimes)
 	.	
 
-testPlan(Child_state, Goal, Been_list, Name, Actions, PreconditionsT, Times, MaxDepth) :-
+testPlan(Child_state, Goal, Been_list, Name, Actions, PreconditionsT, Times, MaxDepth, RetActions, RetTimes) :-
 	\+equal_set(Child_state, Goal),
 	not(member_state(Child_state, Been_list)),
 	stack(Child_state, Been_list, New_been_list),
 	stack(Name, Actions, New_actions),
 	partial_order(PreconditionsT, New_been_list, Time),
 	stack(Time, Times, New_Times),
-	plan(Child_state, Goal, New_been_list, New_actions, New_Times, MaxDepth).
+	plan(Child_state, Goal, New_been_list, New_actions, New_Times, MaxDepth, RetActions, RetTimes).
 
-testPlan(Child_state, Goal, Been_list, Name, Actions, PreconditionsT, Times, MaxDepth) :-
+testPlan(Child_state, Goal, Been_list, Name, Actions, PreconditionsT, Times, MaxDepth, RetActions, RetTimes) :-
 	equal_set(Child_state, Goal),
 	stack(Child_state, Been_list, New_been_list),
 	stack(Name, Actions, New_actions),
 	partial_order(PreconditionsT, New_been_list, Time),
 	stack(Time, Times, New_Times),
-	plan(Child_state, Goal, New_been_list, New_actions, New_Times, MaxDepth).
+	plan(Child_state, Goal, New_been_list, New_actions, New_Times, MaxDepth, RetActions, RetTimes).
 
 change_state(S, [], S).
 change_state(S, [add(P)|T], S_new) :-	
@@ -301,60 +301,92 @@ try_plan(S, G, StateList, Actions, Times, MaxTime) :-
 	(plan(S, G, StateList, Actions, Times, NewMaxTime) -> Res = true; Res = false),
 	test_plan_result(Res, S, G, StateList, Actions, Times, NewMaxTime).
 
-go(S, G) :- 
+go(S, G, Actions, Times) :- 
 	retractall(ontable(_, _, _)),
 	retractall(on(_, _, _, _)),
 	retractall(clear(_)),
 	retractall(available(_)),
 	ground_g(G), 
-	plan(S, G, [S], [], [], 20).
+	plan(S, G, [S], [], [], 20, Actions, Times).
 %try_plan(S, G, [S], [], [], 0).
 
 % from b1, b2 on the table to b2,b1 stacked.
-test01 :- go(
-						[available(a1), available(a2), ontable(b1, 2, 2), clear(b1)],
- 	          [available(a1), available(a2), ontable(b1, 3, 3), clear(b1)]
- 	        ).
+test01(Actions, Times) :- 
+	go(
+		[available(a1), available(a2), ontable(b1, 2, 2), clear(b1)],
+ 	  [available(a1), available(a2), ontable(b1, 3, 3), clear(b1)],
+ 	  Actions,
+ 	  Times
+ 	).
 
-test0 :- go(
-						[available(a1), ontable(b1, 2, 2), clear(b1)],
- 	          [available(a1), ontable(b1, 3, 3), clear(b1)]
- 	        ).
+test0(Actions, Times) :- 
+	go(
+		[available(a1), ontable(b1, 2, 2), clear(b1)],
+ 	  [available(a1), ontable(b1, 3, 3), clear(b1)],
+ 	  Actions,
+ 	  Times
+ 	).
 
-test1 :- go(
-						[available(a1), available(a2), ontable(b1, 2, 2), ontable(b2, 1, 1), clear(b1), clear(b2)],
- 	          [available(a1), available(a2), ontable(b2, 3, 3), on(b1, b2, 3, 3), clear(b1)]
- 	        ).
+test1(Actions, Times) :- 
+	go(
+		[available(a1), available(a2), ontable(b1, 2, 2), ontable(b2, 1, 1), clear(b1), clear(b2)],
+ 	  [available(a1), available(a2), ontable(b2, 3, 3), on(b1, b2, 3, 3), clear(b1)],
+ 	  Actions,
+ 	  Times
+ 	).
 
 % from b2,b1 stacked to b1, b2 on the table.
-test2 :- go(
-						[available(a1), available(a2), available(a3), ontable(b2, 1, 1), on(b1, b2, 1, 1), clear(b1)],
- 	          [available(a1), available(a2), available(a3), ontable(b1, 2, 2), ontable(b2, 3, 3), clear(b1), clear(b2)]
- 	        ).
+test2(Actions, Times) :- 
+	go(
+		[available(a1), available(a2), available(a3), ontable(b2, 1, 1), on(b1, b2, 1, 1), clear(b1)],
+ 	  [available(a1), available(a2), available(a3), ontable(b1, 2, 2), ontable(b2, 3, 3), clear(b1), clear(b2)],
+ 	  Actions,
+ 	  Times
+ 	).
 
 % from b2,b1 stacked and b3 on the table to b1,b2,b3 stacked.
-test3 :- go(
- 	          [available(a1), available(a2), available(a3), ontable(b2, 1, 1), on(b1, b2, 1, 1), clear(b1), ontable(b3, 2, 2), clear(b3)],
-						[available(a1), available(a2), available(a3), ontable(b1, 3, 3), on(b2, b1, 3, 3), on(b3, b2, 3, 3), clear(b3)]
- 	        ).
+test3(Actions, Times) :- 
+	go(
+ 	  [available(a1), available(a2), available(a3), ontable(b2, 1, 1), on(b1, b2, 1, 1), clear(b1), ontable(b3, 2, 2), clear(b3)],
+		[available(a1), available(a2), available(a3), ontable(b1, 3, 3), on(b2, b1, 3, 3), on(b3, b2, 3, 3), clear(b3)],
+ 	  Actions,
+ 	  Times
+ 	).
 
 % from b1,b2,b3 stacked to b1,b3 stacked and b2 on the table
-test4 :-  go(
-							[available(a1), available(a2), available(a3), ontable(b1, 1, 1), on(b2, b1, 1, 1), on(b3, b2, 1, 1), clear(b3)],
-							[available(a1), available(a2), available(a3), ontable(b1, 1, 1), on(b3, b1, 1, 1), ontable(b2, 2, 2), clear(b2), clear(b3)]
-						).
+test4(Actions, Times) :- 
+	go(
+		[available(a1), available(a2), available(a3), ontable(b1, 1, 1), on(b2, b1, 1, 1), on(b3, b2, 1, 1), clear(b3)],
+		[available(a1), available(a2), available(a3), ontable(b1, 1, 1), on(b3, b1, 1, 1), ontable(b2, 2, 2), clear(b2), clear(b3)],
+ 	  Actions,
+ 	  Times
+	).
 
-test5 :-  go(
-							[available(a1), available(a2), available(a3), ontable(b1, 1, 1), ontable(b2, 2, 2), ontable(b3, 3, 3), ontable(b4, 4, 4), clear(b1), clear(b2), clear(b3), clear(b4)],
-							[available(a1), available(a2), available(a3), ontable(b1, 1, 1), on(b2, b1, 1, 1), ontable(b3, 3, 3), on(b4, b3, 3, 3), clear(b2), clear(b4)]
-						).
+test5(Actions, Times) :- 
+	go(
+		[available(a1), available(a2), available(a3), ontable(b1, 1, 1), ontable(b2, 2, 2), ontable(b3, 3, 3), ontable(b4, 4, 4), clear(b1), clear(b2), clear(b3), clear(b4)],
+		[available(a1), available(a2), available(a3), ontable(b1, 1, 1), on(b2, b1, 1, 1), ontable(b3, 3, 3), on(b4, b3, 3, 3), clear(b2), clear(b4)],
+ 	  Actions,
+ 	  Times
+	).
 
-test6 :-  go(
-							[available(a1), ontable(b1, 1, 1), on(b2, b1, 1, 1), clear(b2)],
-							[available(a1), ontable(b1, 2, 2), on(b2, b1, 2, 2), clear(b2)]
-						).
+test6(Actions, Times) :- 
+	go(
+		[available(a1), ontable(b1, 1, 1), on(b2, b1, 1, 1), clear(b2)],
+		[available(a1), ontable(b1, 2, 2), on(b2, b1, 2, 2), clear(b2)],
+ 	  Actions,
+ 	  Times
+	).
 
-test :- test0. 
+test7(Actions, Times) :- 
+	go(
+		[available(a1), available(a2), ontable(b3, 1, 0), ontable(b1, 1, 1), on(b2, b1, 1, 1), clear(b2), clear(b3)],
+		[available(a1), available(a2), ontable(b2, 1, 3), ontable(b1, 1, 2), on(b3, b1, 1, 2), clear(b2), clear(b3)],
+ 	  Actions,
+ 	  Times
+	).
+
+test(Action, Times) :- test0(Action, Times). 
 testNoTrace :- test. 
 testTrace :- leash(-all), trace, testNoTrace. 
 
