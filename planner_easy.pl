@@ -41,22 +41,22 @@ ground_g([H|T]) :-
 	assertz(H),
 	ground_g(T).
 
-partial_order(_Preconditions, [], [], -1).
+partial_order(_PreconditionsT, [], [], -1).
 
-partial_order(Preconditions, [S|T], [I|Times], I) :-
-	conditions_met(Preconditions, S),
+partial_order(PreconditionsT, [S|T], [I|Times], I) :-
+	conditions_met(PreconditionsT, S),
 	NewI is I-1,
-	partial_order(Preconditions, T, Times, NewI).
+	partial_order(PreconditionsT, T, Times, NewI).
 
-partial_order(Preconditions, [S|T], Times, I) :-
-	\+conditions_met(Preconditions, S),
+partial_order(PreconditionsT, [S|T], Times, I) :-
+	\+conditions_met(PreconditionsT, S),
 	NewI is I-1,
-	partial_order(Preconditions, T, Times, NewI).
+	partial_order(PreconditionsT, T, Times, NewI).
 
-partial_order(Preconditions, States, Times) :-
+partial_order(PreconditionsT, States, Times) :-
 	length(States, NStates),
 	N is NStates - 1,
-	partial_order(Preconditions, States, Times, N).
+	partial_order(PreconditionsT, States, Times, N).
 
 is_final_state([], _Goal).
 
@@ -221,7 +221,7 @@ action(
 
 action(
 	move_block_on_start(A, B, X, Y, X1, Y1),
-	[on(B, B1, X, Y)],
+	[on(B, B1, X, Y), gripped(A, B)],
 	[],
 	[],
 	[
@@ -401,6 +401,11 @@ testSmallTrace :-
 	trace(stack, all),
 	test.
 
+testNew :-
+	trace(action, all), 
+	trace(partial_order, all), 
+	trace(conditions_met, all), 
+	test7(A, T).
 
 /*
 action(
