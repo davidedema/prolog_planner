@@ -22,7 +22,8 @@
 %%% This code has been tested with SWI-Prolog (Multi-threaded, Version 5.2.13)
 %%% and appears to function as intended.
 
-:- [adts].
+:- include('adts.pl').
+:- include('actions.pl').
 
 :- dynamic ontable/3.
 :- dynamic available/1.
@@ -41,33 +42,31 @@ ground_g([H|T]) :-
 	assertz(H),
 	ground_g(T).
 
-partial_order(_PreconditionsT, [], [], -1).
+achiever([HP|_TP], [add(HP)|_TE], _).
+achiever([_HP|TP], [], E) :-
+	achiever(TP, E, []).
+achiever([HP|TP], [HE|TE], U) :-
+	append([HE], U, NewU),
+	achiever([HP|TP], TE, NewU).
 
-partial_order(PreconditionsT, [S|T], [I|Times], I) :-
-	conditions_met(PreconditionsT, S),
-	NewI is I-1,
-	partial_order(PreconditionsT, T, Times, NewI).
+partial_order(_PT, [], [], 0).
 
-partial_order(PreconditionsT, [S|T], Times, I) :-
-	\+conditions_met(PreconditionsT, S),
-	NewI is I-1,
-	partial_order(PreconditionsT, T, Times, NewI).
+partial_order(PT, [AH|AT], [I|Times], I) :-
+  action(AH, _, _, _, E, _),
+  achiever(PT, E, []),
+  NewI is I-1,
+  partial_order(PT, AT, Times, NewI).
 
-partial_order(PreconditionsT, States, Times) :-
-	length(States, NStates),
-	N is NStates - 1,
-	partial_order(PreconditionsT, States, Times, N).
+partial_order(PT, [AH|AT], Times, I) :-
+  action(AH, _, _, _, E, _),
+  \+achiever(PT, E, []),
+  NewI is I-1,
+  partial_order(PT, AT, Times, NewI).
 
-is_final_state([], _Goal).
-
-is_final_state([diff(X, X1, Y, Y1)|T], Goal) :-
-	\+((X == X1, Y == Y1)),
-	is_final_state(T, Goal).
-
-is_final_state([H|T], Goal) :-
-	is_final_state(T, Goal),
-	member_set(H, Goal),
-	H.
+partial_order(PT, Actions, Times) :-
+  length(Actions, NActions),
+  N is NActions,
+  partial_order(PT, Actions, Times, N).
 
 verify([]).
 verify([H|T]) :-
@@ -99,7 +98,7 @@ testPlan(Child_state, Goal, Been_list, Name, Actions, PreconditionsT, Times, Max
 	not(member_state(Child_state, Been_list)),
 	stack(Child_state, Been_list, New_been_list),
 	stack(Name, Actions, New_actions),
-	partial_order(PreconditionsT, New_been_list, Time),
+	partial_order(PreconditionsT, Actions, Time),
 	stack(Time, Times, New_Times),
 	plan(Child_state, Goal, New_been_list, New_actions, New_Times, MaxDepth, RetActions, RetTimes).
 
@@ -107,7 +106,7 @@ testPlan(Child_state, Goal, Been_list, Name, Actions, PreconditionsT, Times, Max
 	equal_set(Child_state, Goal),
 	stack(Child_state, Been_list, New_been_list),
 	stack(Name, Actions, New_actions),
-	partial_order(PreconditionsT, New_been_list, Time),
+	partial_order(PreconditionsT, Actions, Time),
 	stack(Time, Times, New_Times),
 	plan(Child_state, Goal, New_been_list, New_actions, New_Times, MaxDepth, RetActions, RetTimes).
 
@@ -134,6 +133,13 @@ conditions_not_met([H|T], S) :-
 member_state(S, [H|_]) :- 	equal_set(S, H).
 member_state(S, [_|T]) :- 	member_state(S, T).
 
+diffPos(X, X1, _Y, _Y1) :-
+	X \== X1.
+diffPos(X, X1, Y, Y1) :-
+	X == X1, Y \== Y1.
+diffPos(X, X1, Y, Y1) :-
+	X == X1, Y == Y1, fail.
+
 reverse_print_stack(S) :- 	empty_stack(S).
 reverse_print_stack(S) :- 	stack(E, Rest, S), 
 	reverse_print_stack(Rest),
@@ -155,151 +161,18 @@ reverse_print_actions_times(Actions, Times, I) :-
 	reverse_print_actions_times(TActions, TTimes, NewI),
 	format("[~w]\t~w ~w~n", [I, M, T]).
 
-diffPos(X, X1, _Y, _Y1) :-
-	X \== X1.
-diffPos(X, X1, Y, Y1) :-
-	X == X1, Y \== Y1.
-diffPos(X, X1, Y, Y1) :-
-	X == X1, Y == Y1, fail.
-
-action(
-	grip_on_start(A, B), 
-	[on(B, B1, X, Y), available(A), clear(B)],
-	[gripped(_, B), gripping(_, B)],
-	[on(B, B1, X, Y)],
-	[del(available(A)), add(gripping(A, B))],
-	[]
-).
-action(
-	grip_ontable_start(A, B), 
-	[ontable(B, X, Y), available(A), clear(B)],
-	[gripped(_, B), gripping(_, B)],
-	[ontable(B, X, Y)],
-	[del(available(A)), add(gripping(A, B))],
-	[]
-).
-action(
-	grip_buffer_start(A, B), 
-	[buffer(B, _X, _Y), available(A), clear(B)],
-	[gripped(_, B), gripping(_, B)],
-	[],
-	[del(available(A)), add(gripping(A, B))],
-	[]
-).
-action(
-	grip_end(A, B), 
-	[gripping(A, B)],
-	[notavalidpredicate(A)],
-	[notavalidpredicate(A)],
-	[del(clear(B)), del(gripping(A, B)), add(gripped(A, B))],
-	[]
-).
-
-action(
-	release_start(A, B),
-	[moved(A, B, X, Y, X1, Y1), gripped(A, B)],
-	[],
-	[],
-	[
-		del(moved(A, B, X, Y, X1, Y1)), del(gripped(A, B)),
-		add(releasing(A, B))
-	],
-	[]
-).
-
-action(
-	release_end(A, B),
-	[releasing(A, B)],
-	[],
-	[],
-	[
-		del(releasing(A, B)),
-		add(clear(B)), add(available(A))
-	],
-	[]
-).
-
-action(
-	move_block_on_start(A, B, X, Y, X1, Y1),
-	[on(B, B1, X, Y), gripped(A, B)],
-	[],
-	[],
-	[
-		del(on(B, B1, X, Y)),
-		add(clear(B1)), add(moving(A, B, X, Y, X1, Y1))
-	],
-	[]
-).
-action(
-	move_block_ontable_start(A, B, X, Y, X1, Y1),
-	[ontable(B, X, Y), gripped(A, B)],
-	[],
-	[],
-	[
-		del(ontable(B, X, Y)) ,
-		add(moving(A, B, X, Y, X1, Y1))
-	],
-	[]
-).
-action(
-	move_block_buffer_start(A, B, X, Y, X1, Y1),
-	[buffer(B, X, Y), gripped(A, B)],
-	[],
-	[],
-	[
-		del(buffer(B, X, Y)),
-		add(moving(A, B, X, Y, X1, Y1))
-	],
-	[]
-).
-
-action(
-	move_block_to_table_end(A, B, X, Y, X1, Y1),
-	[moving(A, B, X, Y, X1, Y1)],
-	[],
-	[],
-	[
-		del(moving(A, B, X, Y, X1, Y1)),
-		add(ontable(B, X1, Y1)), add(moved(A, B, X, Y, X1, Y1))
-	],
-	[ontable(B, X1, Y1), diffPos(X, X1, Y, Y1)]
-).
-action(
-	move_block_to_on_end(A, B, X, Y, X1, Y1),
-	[moving(A, B, X, Y, X1, Y1), clear(B1)],
-	[],
-	[],
-	[
-		del(moving(A, B, X, Y, X1, Y1)), del(clear(B1)),
-		add(on(B, B1, X1, Y1)), add(moved(A, B, X, Y, X1, Y1))
-	],
-	[on(B, B1, X1, Y1), diffPos(X, X1, Y, Y1)]
-).
-action(
-	move_block_to_buffer_end(A, B, X, Y, X1, Y1),
-	[moving(A, B, X, Y, X1, Y1)],
-	[buffer(_B, X1, Y1)],
-	[],
-	[
-		del(moving(A, B, X, Y, X1, Y1)),
-		add(buffer(B, X1, Y1)), add(moved(A, B, X, Y, X1, Y1))
-	],
-	[pos(X1, Y1), diffPos(X, X1, Y, Y1)]
-).
-
-
-test_plan_result(R, _S, _G, _StateList, _Actions, _Times, _MaxTime) :-
+test_plan_result(R, _S, _G, _StateList, _Actions, _Times, _MaxTime, _RetActins, _RetTimes) :-
 	R.
-test_plan_result(R, S, G, _StateList, _Actions, _Times, MaxTime) :-
+test_plan_result(R, S, G, _StateList, _Actions, _Times, MaxTime, RetActions, RetTimes) :-
 	\+ R,
-	try_plan(S, G, [S], [], [], MaxTime).
+	try_plan(S, G, [S], [], [], MaxTime, RetActions, RetTimes).
 
-try_plan(S, G, StateList, Actions, Times, MaxTime) :-
+try_plan(S, G, StateList, Actions, Times, MaxTime, RetActions, RetTimes) :-
 	NewMaxTime is MaxTime + 10, 
 	write("Testing for "), write(NewMaxTime), nl,
 	NewMaxTime < 50,
-	(plan(S, G, StateList, Actions, Times, NewMaxTime) -> Res = true; Res = false),
-	test_plan_result(Res, S, G, StateList, Actions, Times, NewMaxTime).
+	(plan(S, G, StateList, Actions, Times, NewMaxTime, RetActions, RetTimes) -> Res = true; Res = false),
+	test_plan_result(Res, S, G, StateList, Actions, Times, NewMaxTime, RetActions, RetTimes).
 
 go(S, G, Actions, Times) :- 
 	retractall(ontable(_, _, _)),
@@ -307,138 +180,7 @@ go(S, G, Actions, Times) :-
 	retractall(clear(_)),
 	retractall(available(_)),
 	ground_g(G), 
-	plan(S, G, [S], [], [], 20, Actions, Times).
-%try_plan(S, G, [S], [], [], 0).
+	plan(S, G, [S], [], [], 25, Actions, Times).
+ 	%try_plan(S, G, [S], [], [], 0, Actions, Times).
 
-% from b1, b2 on the table to b2,b1 stacked.
-test01(Actions, Times) :- 
-	go(
-		[available(a1), available(a2), ontable(b1, 2, 2), clear(b1)],
- 	  [available(a1), available(a2), ontable(b1, 3, 3), clear(b1)],
- 	  Actions,
- 	  Times
- 	).
 
-test0(Actions, Times) :- 
-	go(
-		[available(a1), ontable(b1, 2, 2), clear(b1)],
- 	  [available(a1), ontable(b1, 3, 3), clear(b1)],
- 	  Actions,
- 	  Times
- 	).
-
-test1(Actions, Times) :- 
-	go(
-		[available(a1), available(a2), ontable(b1, 2, 2), ontable(b2, 1, 1), clear(b1), clear(b2)],
- 	  [available(a1), available(a2), ontable(b2, 3, 3), on(b1, b2, 3, 3), clear(b1)],
- 	  Actions,
- 	  Times
- 	).
-
-% from b2,b1 stacked to b1, b2 on the table.
-test2(Actions, Times) :- 
-	go(
-		[available(a1), available(a2), available(a3), ontable(b2, 1, 1), on(b1, b2, 1, 1), clear(b1)],
- 	  [available(a1), available(a2), available(a3), ontable(b1, 2, 2), ontable(b2, 3, 3), clear(b1), clear(b2)],
- 	  Actions,
- 	  Times
- 	).
-
-% from b2,b1 stacked and b3 on the table to b1,b2,b3 stacked.
-test3(Actions, Times) :- 
-	go(
- 	  [available(a1), available(a2), available(a3), ontable(b2, 1, 1), on(b1, b2, 1, 1), clear(b1), ontable(b3, 2, 2), clear(b3)],
-		[available(a1), available(a2), available(a3), ontable(b1, 3, 3), on(b2, b1, 3, 3), on(b3, b2, 3, 3), clear(b3)],
- 	  Actions,
- 	  Times
- 	).
-
-% from b1,b2,b3 stacked to b1,b3 stacked and b2 on the table
-test4(Actions, Times) :- 
-	go(
-		[available(a1), available(a2), available(a3), ontable(b1, 1, 1), on(b2, b1, 1, 1), on(b3, b2, 1, 1), clear(b3)],
-		[available(a1), available(a2), available(a3), ontable(b1, 1, 1), on(b3, b1, 1, 1), ontable(b2, 2, 2), clear(b2), clear(b3)],
- 	  Actions,
- 	  Times
-	).
-
-test5(Actions, Times) :- 
-	go(
-		[available(a1), available(a2), available(a3), ontable(b1, 1, 1), ontable(b2, 2, 2), ontable(b3, 3, 3), ontable(b4, 4, 4), clear(b1), clear(b2), clear(b3), clear(b4)],
-		[available(a1), available(a2), available(a3), ontable(b1, 1, 1), on(b2, b1, 1, 1), ontable(b3, 3, 3), on(b4, b3, 3, 3), clear(b2), clear(b4)],
- 	  Actions,
- 	  Times
-	).
-
-test6(Actions, Times) :- 
-	go(
-		[available(a1), ontable(b1, 1, 1), on(b2, b1, 1, 1), clear(b2)],
-		[available(a1), ontable(b1, 2, 2), on(b2, b1, 2, 2), clear(b2)],
- 	  Actions,
- 	  Times
-	).
-
-test7(Actions, Times) :- 
-	go(
-		[available(a1), available(a2), ontable(b3, 1, 0), ontable(b1, 1, 1), on(b2, b1, 1, 1), clear(b2), clear(b3)],
-		[available(a1), available(a2), ontable(b2, 1, 3), ontable(b1, 1, 2), on(b3, b1, 1, 2), clear(b2), clear(b3)],
- 	  Actions,
- 	  Times
-	).
-
-test(Action, Times) :- test0(Action, Times). 
-testNoTrace :- test. 
-testTrace :- leash(-all), trace, testNoTrace. 
-
-testSmallTrace :- 
-	trace(action, all),
-	trace(conditions_met, all), 
-	trace(conditions_not_met, all), 
-	trace(plan, all),
-	trace(stack, all),
-	trace(is_final_state, all),
-	trace(testPlan, all),
-	trace(stack, all),
-	test.
-
-testNew :-
-	trace(action, all), 
-	trace(partial_order, all), 
-	trace(conditions_met, all), 
-	test7(A, T).
-
-/*
-action(
-	move_block_to_table_end(A, B, X, Y, X1, Y1),
-	[gripped(A, B), moving(A, B, X, Y, X1, Y1)],
-	[],
-	[],
-	[
-		del(moving(A, B, X, Y, X1, Y1)), del(gripped(A, B)),
-		add(available(A)), add(ontable(B, X1, Y1)), add(clear(B))
-	],
-	[ontable(B, X1, Y1), diffPos(X, X1, Y, Y1)]
-).
-action(
-	move_block_to_on_end(A, B, X, Y, X1, Y1),
-	[gripped(A, B), moving(A, B, X, Y, X1, Y1), clear(B1)],
-	[],
-	[],
-	[
-		del(moving(A, B, X, Y, X1, Y1)), del(clear(B1)), del(gripped(A, B)),
-		add(available(A)), add(on(B, B1, X1, Y1)), add(clear(B))
-	],
-	[on(B, B1, X1, Y1), diffPos(X, X1, Y, Y1)]
-).
-action(
-	move_block_to_buffer_end(A, B, X, Y, X1, Y1),
-	[gripped(A, B), moving(A, B, X, Y, X1, Y1)],
-	[buffer(_B, X1, Y1)],
-	[],
-	[
-		del(moving(A, B, X, Y, X1, Y1)), del(gripped(A, B)),
-		add(buffer(B, X1, Y1)), add(clear(B)), add(available(A))
-	],
-	[pos(X1, Y1), diffPos(X, X1, Y, Y1)]
-).
-*/

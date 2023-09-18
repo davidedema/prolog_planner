@@ -88,11 +88,6 @@ def addDurations(G, Actions, Times):
             if n == None and j == len(Actions):
                 raise Exception("Actions {}({}) did not end".format(m['actionName'], m['args']))
 
-    # print(G.get_edge_data(2,1), type(G.get_edge_data(1,2)))
-    # print(G.get_edge_data(1,2), type(G.get_edge_data(1,2)))
-    # print(G.nodes[1]['label'], G.nodes[2]['label'], G.get_edge_data(1, 2)['weight'], G.get_edge_data(2, 1)['weight'])
-    # edge_labels = {(u,v) : d['weight'] for u,v,d in G.edges(data=True) if d['weight'] != 0} 
-    # print(edge_labels)
 
 def checkConsistency(G):
     def w(u, v, d):
@@ -113,9 +108,11 @@ def checkConsistency(G):
     return not found
         
 
+def toBT(STN):
+    pass
 
 def main(): 
-    test0 = Functor("test7", 2)
+    test0 = Functor("test0", 2)
     A = Variable()
     T = Variable()
 
@@ -131,14 +128,15 @@ def main():
     for a in range(len(Actions)):
         G.add_nodes_from([(a+1, {'label' : "[{}] {}\n{}".format(a+1, str(Actions[a]), Times[a])})])
 
+    addDurations(G, Actions, Times)
+
     # Add edges
     for it in range(len(Times)):
         t = min([int(time) for time in Times[it]])
-        G.add_edge(t, it+1, weight=0, label = "from {} to {}".format(t, it+1))
+        if not G.has_edge(t, it+1):
+            G.add_edge(t, it+1, weight=0, label = "from {} to {}".format(t, it+1))
         # for t in list(Times[it]):
         #     G.add_edge(t, it+1, weight = 0, label = "from {} to {}".format(t, it+1))
-
-    addDurations(G, Actions, Times)
 
     drawSTN(G)
     if checkConsistency(G):
