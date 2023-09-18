@@ -52,7 +52,7 @@ class BT_INIT_START(BT_NODE):
 
 class BT_SEQ_START(BT_NODE):
     def __init__(self, STN_node, level, parent):
-        super().__init__(STN_node, level, "SS", parent)
+        super().__init__(STN_node, level, "SEQ", parent)
 
     def __repr__(self):
         return str(self)
@@ -72,27 +72,27 @@ class BT_SEQ_START(BT_NODE):
     def get_child(self, index):
         return super().get_child(index)
 
-class BT_SEQ_END(BT_NODE):
-    def __init__(self, STN_node, level, parent):
-        super().__init__(STN_node, level, "SE", parent)
-
-    def __repr__(self):
-        return str(self)
-
-    def __str__(self):
-        return super().__str__()
-
-    def get_STN_node(self):
-        return super().get_STN_node()
-
-    def get_parent(self):
-        return super().get_parent()
-
-    def add_child(self, child):
-        super().add_child(child)
-
-    def get_child(self, index):
-        return super().get_child(index)
+# class BT_SEQ_END(BT_NODE):
+#     def __init__(self, STN_node, level, parent):
+#         super().__init__(STN_node, level, "SE", parent)
+#
+#     def __repr__(self):
+#         return str(self)
+#
+#     def __str__(self):
+#         return super().__str__()
+#
+#     def get_STN_node(self):
+#         return super().get_STN_node()
+#
+#     def get_parent(self):
+#         return super().get_parent()
+#
+#     def add_child(self, child):
+#         super().add_child(child)
+#
+#     def get_child(self, index):
+#         return super().get_child(index)
 
 class BT_PAR_START(BT_NODE):
     def __init__(self, STN_node, level, parent):
