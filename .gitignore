@@ -11,3 +11,8 @@ tmp.txt
 prologParser.html
 
 lib/
+
+.idea
+
+*.png
+*.html
