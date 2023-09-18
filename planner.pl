@@ -41,8 +41,20 @@ partial_order(Preconditions, States, Times) :-
 	N is NStates - 1,
 	partial_order(Preconditions, States, Times, N).
 
+is_final_state([], _Goal).
+
+is_final_state([diff(_X, _X1, _Y, _Y1)|T], Goal) :-
+				is_final_state(T, Goal).
+
+is_final_state([H|T], Goal) :-
+				member_set(H, Goal),
+				is_final_state(T, Goal).
+
 plan(State, Goal, _, Actions, Times) :- 	
-				equal_set(State, Goal), 
+				is_final_state(State, Goal),
+				is_final_state(Goal, State),
+				validate_state(State),
+				% equal_set(State, Goal),
 				write('actions are'), nl,
 				%reverse_print_stack(Actions),
 				reverse_print_actions_times(Actions, Times)
@@ -75,6 +87,9 @@ testPlan(Child_state, Goal, Been_list, Name, Actions, PreconditionsT, Times) :-
 				stack(Time, Times, New_Times),
 				plan(Child_state, Goal, New_been_list, New_actions, New_Times).
 
+validate_state([]).
+validate_state([_|T]) :-
+					validate_state(T), !.
 
 change_state(S, [], S).
 change_state(S, [add(P)|T], S_new) :-	change_state(S, T, S2),
@@ -82,7 +97,10 @@ change_state(S, [add(P)|T], S_new) :-	change_state(S, T, S2),
 change_state(S, [del(P)|T], S_new) :-	change_state(S, T, S2),
 					remove_from_set(P, S2, S_new), !.
 
-conditions_met(P, S) :- subset(P, S).
+conditions_met([], _S).
+conditions_met([H|T], S) :- 
+					member_set(H,S),
+					conditions_met(T, S).
 
 conditions_not_met([], _).
 conditions_not_met([H|T], S) :- 
@@ -147,52 +165,55 @@ action(
 			[gripped(A, B), on(B, B1, X, Y)],
 			[notavalidpredicate(A)],
 			[notavalidpredicate(A)],
-			[del(on(B, B1, X, Y)), add(clear(B1)), add(translating(A, B, X, Y, X1, Y1))]
+			[del(on(B, B1, X, Y)), add(clear(B1)), add(translating(A, B, X, Y, X1, Y1)), add(diff(X, X1, Y, Y1))]
+			%[del(on(B, B1, X, Y)), add(clear(B1)), add(translating(A, B, X, Y, X1, Y1))]
 		).
 action(
 			move_block_ontable_start(A, B, X, Y, X1, Y1),
 			[gripped(A, B), ontable(B, X, Y)],
 			[notavalidpredicate(A)],
-			[notavalidpredicate(A)],
-			[del(ontable(B, X, Y)), add(translating(A, B, X, Y, X1, Y1))]
+			[notavalidpredicate(A), equal(X, X1), equal(Y, Y1)],
+			[del(ontable(B, X, Y)), add(translating(A, B, X, Y, X1, Y1)), add(diff(X, X1, Y, Y1))]
+			%[del(ontable(B, X, Y)), add(translating(A, B, X, Y, X1, Y1))]
 		).
 action(
 			move_block_end(A, B, X, Y, X1, Y1),
 			[translating(A, B, X, Y, X1, Y1)],
 			[notavalidpredicate(A)],
 			[notavalidpredicate(A)],
-			[del(translating(A, B, X, Y, X1, Y1)), add(moving(A, B, X1, Y1))]
+			[del(translating(A, B, X, Y, X1, Y1)), add(moving(A, B, X, Y, X1, Y1)), add(diff(X, X1, Y, Y1))]
+			%[del(translating(A, B, X, Y, X1, Y1)), add(moving(A, B, X1, Y1))]
+		).
+
+action(
+			release(A, B),
+			[moving(A, B, X, Y, X1, Y1)],
+			[notavalidpredicate(A)],
+			[notavalidpredicate(A)],
+			[del(gripped(A, B)), del(moving(A, B, X, Y, X1, Y1)), add(available(A)), add(ontable(B, X1, Y1)), add(clear(B))]
 		).
 
 	% action(
-	% 			release(A, B),
+	% 			release_start(A, B),
 	% 			[moving(A, B, X1, Y1)],
 	% 			[notavalidpredicate(A)],
 	% 			[notavalidpredicate(A)],
-	% 			[del(gripped(A, B)), del(moving(A, B, X1, Y1)), add(available(A)), add(ontable(B, X1, Y1)), add(clear(B))]
+	% 			[del(moving(A, B, X1, Y1)), add(releasing(A, B, X1, Y1))]
 	% 		).
-
-	action(
-				release_start(A, B),
-				[moving(A, B, X1, Y1)],
-				[notavalidpredicate(A)],
-				[notavalidpredicate(A)],
-				[del(moving(A, B, X1, Y1)), add(releasing(A, B, X1, Y1))]
-			).
-	action(
-				release_end(A, B),
-				[releasing(A, B, X1, Y1)],
-				[notavalidpredicate(A)],
-				[notavalidpredicate(A)],
-				[del(releasing(A, B, X1, Y1)), del(gripped(A, B)), add(available(A)), add(ontable(B, X1, Y1)), add(clear(B))]
-			).
+	% action(
+	% 			release_end(A, B),
+	% 			[releasing(A, B, X1, Y1)],
+	% 			[notavalidpredicate(A)],
+	% 			[notavalidpredicate(A)],
+	% 			[del(releasing(A, B, X1, Y1)), del(gripped(A, B)), add(available(A)), add(ontable(B, X1, Y1)), add(clear(B))]
+	% 		).
 
 action(
 			stack_start(A, B1, B2),
-			[moving(A, B1, X1, Y1), clear(B2)],
+			[moving(A, B1, X, Y, X1, Y1), clear(B2)],
 			[gripping(_A, B2)],
 			[notavalidpredicate(A)],
-			[del(clear(B2)), del(moving(A, B1, X1, Y1)), add(stacking(A, B1, B2, X1, Y1))]
+			[del(clear(B2)), del(moving(A, B1, X, Y, X1, Y1)), add(stacking(A, B1, B2, X1, Y1))]
 		).
 action(
 			stack_end(A, B1, B2),
@@ -293,7 +314,12 @@ test4 :-  go(
 							[available(a1), available(a2), available(a3), ontable(b1, 1, 1), on(b3, b1, 1, 1), ontable(b2, 2, 2), clear(b2), clear(b3)]
 						).
 
-test :- test0.
+test5 :-  go(
+							[available(a1), available(a2), available(a3), ontable(b1, 1, 1), ontable(b2, 2, 2), ontable(b3, 3, 3), ontable(b4, 4, 4), clear(b1), clear(b2), clear(b3), clear(b4)],
+							[available(a1), available(a2), available(a3), ontable(b1, 1, 1), on(b2, b1, 1, 1), ontable(b3, 3, 3), on(b4, b3, 3, 3), clear(b2), clear(b4)]
+						).
+
+test :- test1.
 
 
 /*
