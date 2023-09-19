@@ -3,7 +3,7 @@ from .BTUtils import toFlowfromSTN, add_nodes, add_edges
 from ..STN import SimpTempNet
 import networkx as nx
 import matplotlib.pyplot as plt
-from bokeh.plotting import figure, show
+from bokeh.plotting import figure, show, output_file
 from bokeh.models import ColumnDataSource, HTMLLabelSet
 
 class BehaviourTree:
@@ -104,6 +104,7 @@ class BehaviourTree:
         plot.renderers.extend([nodes, labels, edges])
 
         # Show the plot
+        output_file(filename="BT.html")
         show(plot)
 
     def drawMatplotlib(self,):

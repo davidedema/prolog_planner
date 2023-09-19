@@ -21,6 +21,7 @@ def toFlowFromSTNRec(stn : SimpTempNet, action_id, used, level, parent):
     used.append(action)
 
     action_children = stn.out_edges(action_id)
+    action_parents  = stn.in_edges(action_id)
     if len(action_children) == 0:
         return BT_EXEC_END(action, level, parent)
 
@@ -33,6 +34,12 @@ def toFlowFromSTNRec(stn : SimpTempNet, action_id, used, level, parent):
         flow.append(BT_INIT_START(action, level, parent))
 
     new_parent = flow[-1]
+
+    if len(action_parents) > 1 :
+        print("Real parent", parent.get_STN_node())
+        for p in action_parents:
+            if stn.nodes(data=True)[p[0]] != parent.get_STN_node():
+                flow.append(BT_WAIT_ACTION(stn.nodes(data=True)[p[0]], level + 1, new_parent))
 
     if action['type'] == "start":
         flow.append(BT_EXEC_START(action, level+1, new_parent))
