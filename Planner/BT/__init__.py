@@ -12,15 +12,12 @@ class BehaviourTree(nx.DiGraph):
         toBTfromSTN(self, stn)
 
     def add_bt_node(self, node : BTNode):
-        print("Adding node", node, hash(node))
         if node:
-            if node not in self.nodes:
-                self.add_node(node)
-                if node.get_parent() is not None:
-                    self.add_edge(node.get_parent(), node)
-                    node.get_parent().add_child(node)
-            else:
-                raise Exception("Node already in BT")
+            assert node not in self.nodes, "Node {} already in BT".format(node)
+            self.add_node(node)
+            if node.get_parent() is not None:
+                self.add_edge(node.get_parent(), node)
+                node.get_parent().add_child(node)
 
     def tick(self):
         list(self.nodes.keys())[0].tick()
@@ -131,7 +128,7 @@ def toBTfromSTNRec(bt : BehaviourTree, stn : SimpTempNet, action_id, used, level
     action = stn.nodes(data=True)[action_id]
 
     if action in used:
-        bt.add_bt_node(BT_WAIT_ACTION(action, level, parent))
+        # bt.add_bt_node(BT_WAIT_ACTION(action, level, parent))
         return
 
     used.append(action)

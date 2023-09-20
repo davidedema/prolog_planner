@@ -23,7 +23,6 @@ class SimpTempNet(nx.DiGraph):
 
         # Add edges
         for it in range(len(times)):
-            print(times[it])
             t = 0
             if len(times[it]) > 0:
                 t = max([int(time) for time in times[it]])
@@ -118,7 +117,7 @@ class SimpTempNet(nx.DiGraph):
                     print(e)
                 break
             except Exception:
-                print("No negative cycle from", self.nodes[n]['label'])
+                pass
 
         return not found
 
