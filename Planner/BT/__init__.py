@@ -1,20 +1,29 @@
 from . import BTNode
-from .BTUtils import toFlowfromSTN, add_nodes, add_edges
-from ..STN import SimpTempNet
+from Planner.STN import SimpTempNet
+from Planner.BT.BTNode import *
 import networkx as nx
 import matplotlib.pyplot as plt
 from bokeh.plotting import figure, show, output_file
 from bokeh.models import ColumnDataSource, HTMLLabelSet
 
-class BehaviourTree:
+class BehaviourTree(nx.DiGraph):
     def __init__(self, stn : SimpTempNet):
-        self.flow = toFlowfromSTN(stn)
+        super(BehaviourTree, self).__init__()
+        toBTfromSTN(self, stn)
 
-    def getFlow(self):
-        return self.flow
+    def add_bt_node(self, node : BTNode):
+        print("Adding node", node, hash(node))
+        if node:
+            if node not in self.nodes:
+                self.add_node(node)
+                if node.get_parent() is not None:
+                    self.add_edge(node.get_parent(), node)
+                    node.get_parent().add_child(node)
+            else:
+                raise Exception("Node already in BT")
 
-    def toBT(self, stn : SimpTempNet):
-        pass
+    def tick(self):
+        list(self.nodes.keys())[0].tick()
 
     def __str__(self):
         pass
@@ -23,12 +32,6 @@ class BehaviourTree:
         self.drawBokeh()
 
     def drawBokeh(self):
-        G = nx.DiGraph()
-
-        hash_map = dict()
-        add_nodes(self.flow, G, hash_map)
-        add_edges(self.flow, G, hash_map)
-
         min_node_size = 70000  # Minimum node size
         max_node_size = 10000  # Maximum node size
 
@@ -38,12 +41,12 @@ class BehaviourTree:
         )
 
         # Create a layout using from_networkx
-        layout = nx.nx_agraph.graphviz_layout(G, prog="dot")  # You can use other layout algorithms as well
-        # layout = nx.spring_layout(G)
+        layout = nx.nx_agraph.graphviz_layout(self, prog="dot")  # You can use other layout algorithms as well
+        # layout = nx.spring_layout(self)
 
         # Extract edge endpoints
-        edge_start = [edge[0] for edge in G.edges]
-        edge_end = [edge[1] for edge in G.edges]
+        edge_start = [edge[0] for edge in self.edges]
+        edge_end = [edge[1] for edge in self.edges]
 
         # Extract node attributes
         Xs = []
@@ -52,11 +55,11 @@ class BehaviourTree:
         label_lengths = []
         node_sizes = []
 
-        for node in G.nodes:
+        for node in range(len(self.nodes)):
             pos = list(layout.values())[node]
             Xs.append(pos[0])
             Ys.append(pos[1])
-            node_labels.append(G.nodes[node].get('label', ''))
+            node_labels.append(str(list(self.nodes.keys())[node]))
             label_lengths.append(len(node_labels[-1]))
 
         for labelLen in label_lengths:
@@ -108,29 +111,77 @@ class BehaviourTree:
         show(plot)
 
     def drawMatplotlib(self,):
-        G = nx.DiGraph()
-
-        hash_map = dict()
-        add_nodes(self.flow, G, hash_map)
-
-        add_edges(self.flow, G, hash_map)
-
         plt.close()
         plt.figure(1, figsize=(25, 20), dpi=400)
 
-        pos = nx.nx_agraph.graphviz_layout(G, prog="dot")
-        # pos = nx.circular_layout(G)
-        # pos = nx.spring_layout(G)
-        nx.draw_networkx_nodes(G, pos, node_color='#FFFFFF')
-        nx.draw_networkx_edges(G, pos, edge_color='#AAAAAA')
-        nx.draw_networkx_labels(G, pos, labels={n: G.nodes[n]['label'] for n in G.nodes})
-
-        # from pyvis.network import Network
-        #
-        # nt = Network('1600px', '1200px')
-        # nt.from_nx(G)
-        # nt.show("nx.html", notebook=False)
+        pos = nx.nx_agraph.graphviz_layout(self, prog="dot")
+        # pos = nx.circular_layout(self)
+        # pos = nx.spring_layout(self)
+        nx.draw_networkx_nodes(self, pos, node_color='#FFFFFF')
+        nx.draw_networkx_edges(self, pos, edge_color='#AAAAAA')
+        nx.draw_networkx_labels(self, pos, labels={n: self.nodes[n]['label'] for n in self.nodes})
 
         plt.savefig("BT.png")
 
-        return G
+
+def toBTfromSTNRec(bt : BehaviourTree, stn : SimpTempNet, action_id, used, level, parent) -> None:
+    """
+    @brief This returns a flow, that is a list of lists of nodes
+    """
+    action = stn.nodes(data=True)[action_id]
+
+    if action in used:
+        bt.add_bt_node(BT_WAIT_ACTION(action, level, parent))
+        return
+
+    used.append(action)
+
+    action_children = stn.out_edges(action_id)
+    action_parents  = stn.in_edges(action_id)
+    if len(action_children) == 0:
+        bt.add_bt_node(BT_EXEC_END(action, level, parent))
+        return
+
+    # Add information for the current action
+    new_parent = BT_SEQ_START(action, level, parent)
+    if action['type'] == "init":
+        new_parent = BT_INIT_START(action, level, parent)
+    bt.add_bt_node(new_parent)
+
+    if len(action_parents) > 1:
+        for p in action_parents:
+            if stn.nodes(data=True)[p[0]] != parent.get_STN_node():
+                bt.add_bt_node(BT_WAIT_ACTION(stn.nodes(data=True)[p[0]], level + 1, new_parent))
+
+    if action['type'] == "start":
+        bt.add_bt_node(BT_EXEC_START(action, level+1, new_parent))
+    elif action['type'] == "end":
+        bt.add_bt_node(BT_EXEC_END(action, level+1, new_parent))
+
+    # Check if the children nodes should be run in parallel
+    recursive_level = 0
+    # TODO FIX
+    if len(action_children) > 1:
+        new_parent = BT_PAR_START(action, level + 1, new_parent)
+        bt.add_bt_node(new_parent)
+        recursive_level = 1
+
+    # Add the corresponding child(ren) to the BT
+    end_node_id = None
+    if action['type'] == "start":
+        end_node_id = stn.getEnd(action_id)
+        bt.add_bt_node(toBTfromSTNRec(bt, stn, end_node_id, used, level + recursive_level + 1, new_parent))
+    for new_node_id in action_children:
+        if not end_node_id or (end_node_id and end_node_id != new_node_id[1]):
+            bt.add_bt_node(toBTfromSTNRec(bt, stn, new_node_id[1], used, level+recursive_level+1, new_parent))
+
+def toBTfromSTN(bt : BehaviourTree, stn : SimpTempNet):
+    # Remove negative edges
+    edges_to_remove = []
+    for edge in stn.edges(data=True):
+        if edge[2]['weight'] < 0:
+            edges_to_remove.append(edge)
+    for edge in edges_to_remove:
+        stn.remove_edge(edge[0], edge[1])
+
+    return toBTfromSTNRec(bt, stn, 0, [], 1, None)

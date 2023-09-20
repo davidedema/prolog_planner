@@ -60,8 +60,6 @@ def main():
     stn.draw()
 
     bt = BehaviourTree(stn)
-    print("Printing BT")
-    print_BT(bt.getFlow())
     bt.draw()
 
 
