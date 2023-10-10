@@ -1,4 +1,4 @@
-:- include('../planner_easy.pl').
+:- include('../planner.pl').
 
 % The lists are empty -> false
 test0 :- \+achiever([], [], []).

@@ -1,4 +1,4 @@
-:- include('planner_easy.pl').
+:- include('planner.pl').
 
 % from b1, b2 on the table to b2,b1 stacked.
 test01(Actions, Times) :- 

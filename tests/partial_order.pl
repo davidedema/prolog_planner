@@ -1,4 +1,4 @@
-:- include('../planner_easy.pl').
+:- include('../planner.pl').
 
 action(
   myAction(A, B),

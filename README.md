@@ -1,17 +1,9 @@
 <p align='center'>
-    <h1 align="center">Prolog planner for UR5 pick and place</h1>
-    <p align="center">
-    Project for my bachelor degree at the University of Trento A.Y.2022/2023
-    </p>
-    <p align='center'>
-    Developed by:<br>
-    De Martini Davide <br>
-    </p>   
+    <h1 align="center">Probabilistic and Logic Oriented Planning (PLOP)</h1>
 </p>
-
-<p align='center'>
+<!-- <p align='center'>
     <img src='img/ur5sim.png'>
-</p>
+</p> -->
 
 ----------
 
@@ -29,11 +21,13 @@
 - [Known issues and future works](#known-issues-and-future-works)
   - [Issues](#issues)
   - [Future works](#future-works)
-- [Thanks to](#thanks-to)
+- [Contributors](#contributors)
 
 
 ## Project Description
-The goal of this project was to develop a Prolog Task planner for performing pick and place tasks. The main task is to build a tower with a "user defined" height. At first a prolog program `block_world.pl` was created. Then it was wrapped inside a ROS node for communicating to the robot. 
+The goal of this project is to create a planner using Prolog
+logic inference and the probabilistic reasoning offered by
+Problog. 
 
 ## Project Structure
 ![](img/p_structure.png)
@@ -49,7 +43,8 @@ The main folder is:
 
 ## Requirements
 
-For install the requirements I suggest to follow the [Installation](#installation) section.
+For installing the requirements I suggest to follow the
+[Installation](#installation) section.
 
 ### PROLOG ONLY
 For the prolog only version you will only need the [SWI Prolog](https://www.swi-prolog.org/build/PPA.html) interpeter.
@@ -161,11 +156,13 @@ python3 -i ~/ros_ws/src/prolog_project/prolog_project/scripts/prolog_node.py
 - Get the blocks info with machine learning methods (e.g. neuro problog)
 - Optimize the makespan selecting the blocks that are faster to build 
 
-## Thanks to
-- Luigi Palopoli (Thesis Supervisor): luigi.palopoli@unitn.it
-- Marco Roveri (Supervisor): marco.roveri@unitn.it
-- Edoardo Lamon (Supervisor): edoardo.lamon@unitn.it
-- Enrico Saccon (Supervisor): enrico.saccon@unitn.it
+## Contributors
+- Enrico Saccon: enrico.saccon@unitn.it
+- Ahmet Tikna: ahmet.tikna@unitn.it
+- Davide De Martini: davide.demartini@studenti.unitn.it
+- Edoardo Lamon: edoardo.lamon@unitn.it
+- Marco Roveri: marco.roveri@unitn.it
+- Luigi Palopoli: luigi.palopoli@unitn.it
 
 
 

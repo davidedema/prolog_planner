@@ -1,8 +1,6 @@
 import networkx as nx
 import re
 import matplotlib.pyplot as plt
-from bokeh.plotting import figure, show, output_file
-from bokeh.models import ColumnDataSource, HTMLLabelSet
 
 class SimpTempNet(nx.DiGraph):
     def __init__(self, actions, times):
@@ -126,6 +124,9 @@ class SimpTempNet(nx.DiGraph):
         self.drawBokeh()
 
     def drawBokeh(self):
+        return
+        from bokeh.plotting import figure, show, output_file
+        from bokeh.models import ColumnDataSource, HTMLLabelSet
         min_node_size = 70000  # Minimum node size
         max_node_size = 10000  # Maximum node size
 

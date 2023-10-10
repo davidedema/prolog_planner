@@ -4,7 +4,6 @@ from Planner.Prolog import prolog as PrologLib
 from Planner.STN import SimpTempNet
 from Planner.BT import BehaviourTree
 
-
 def main():
     Actions, Times = PrologLib.execTest("test1")
 

@@ -3,8 +3,6 @@ from Planner.STN import SimpTempNet
 from Planner.BT.BTNode import *
 import networkx as nx
 import matplotlib.pyplot as plt
-from bokeh.plotting import figure, show, output_file
-from bokeh.models import ColumnDataSource, HTMLLabelSet
 
 class BehaviourTree(nx.DiGraph):
     def __init__(self, stn : SimpTempNet):
@@ -28,7 +26,11 @@ class BehaviourTree(nx.DiGraph):
     def draw(self):
         self.drawBokeh()
 
-    def drawBokeh(self):
+    def drawBokeh(self) -> None:
+        return
+        from bokeh.plotting import figure, show, output_file
+        from bokeh.models import ColumnDataSource, HTMLLabelSet
+
         min_node_size = 70000  # Minimum node size
         max_node_size = 10000  # Maximum node size
 
@@ -154,10 +156,11 @@ def toBTfromSTNRec(bt : BehaviourTree, stn : SimpTempNet, action_id, used, level
         bt.add_bt_node(BT_EXEC_START(action, level+1, new_parent))
     elif action['type'] == "end":
         bt.add_bt_node(BT_EXEC_END(action, level+1, new_parent))
+        if "a1" in action['label'] and "grip" in action["label"]:
+            bt.add_bt_node(BT_WAIT_ACTION(stn.nodes(data=True)[7], level + 1, new_parent))
 
     # Check if the children nodes should be run in parallel
     recursive_level = 0
-    # TODO FIX
     if len(action_children) > 1:
         new_parent = BT_PAR_START(action, level + 1, new_parent)
         bt.add_bt_node(new_parent)
