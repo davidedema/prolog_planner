@@ -1,0 +1,9 @@
+{
+    "GRIP_ONT" : {"lower" : 3,  "upper" : 5},
+    "GRIP_BUF" : {"lower" : 6,  "upper" : 10},
+    "GRIP_ON"  : {"lower" : 4,  "upper" : 7},
+    "MOVE_ONT" : {"lower" : 10, "upper" : 20},
+    "MOVE_BUF" : {"lower" : 10, "upper" : 20},
+    "MOVE_ON"  : {"lower" : 15, "upper" : 30},
+    "RELEASE"  : {"lower" : 5,  "upper" : 10}
+}

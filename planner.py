@@ -5,7 +5,7 @@ from Planner.STN import SimpTempNet
 from Planner.BT import BehaviourTree
 
 def main():
-    Actions, Times = PrologLib.execTest("test1")
+    Actions, Times = PrologLib.execTest("testScan")
 
     stn = SimpTempNet(Actions, Times)
 

@@ -5,8 +5,8 @@ action(
   [],
   [],
   [],
-  [add(available(A)), add(clear(B))],
-  []
+  [],
+  [add(available(A)), add(clear(B))]
 ).
 
 % Partial order of no preconditions over no actions should be an empty list
@@ -22,7 +22,7 @@ test1 :-
 % Partial order of a precondition over a list of actions containing the correct action, should be the position of the action
 test2 :- 
   partial_order([available(a1)], [myAction(a1,b2)], T),
-  T == [0].
+  T == [1].
 
 % Partial order of a precondition over a list of actions not containing the correct action, should an empty list
 test3 :- 
@@ -32,12 +32,12 @@ test3 :-
 % Partial order of a precondition over a list of actions containing multiple times the correct effects, should be the positions of the actions
 test4 :- 
   partial_order([available(a1)], [myAction(a1, b2), myAction(a2, b2), myAction(a1,b2), myAction(a2, b2), myAction(a2, b2)], T),
-  T == [4,2].
+  T == [5,3].
 
 % Partial order of a list of preconditions over a list of actions containing multiple times the correct effects, should be the positions of the actions
 test5 :- 
   partial_order([available(a1), clear(b3)], [myAction(a2, b3), myAction(a2, b2), myAction(a1,b2), myAction(a2, b2), myAction(a2, b2)], T),
-  T == [4,2].
+  T == [5,3].
 
 test :- 
   write('Running test0: '), test0, write('passed'), nl,

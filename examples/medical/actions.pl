@@ -1,11 +1,23 @@
 action(
-    set_position(PositionNew),
+    set_position_start(PositionNew),
     [position_set(PositionOld)],
     [position_set(PositionNew)],
     [position_set(PositionOld)],
     [pos(PositionNew)],
     [
         del(position_set(PositionOld)), 
+        add(position_setting(PositionNew))
+    ]
+).
+
+action(
+    set_position_end(PositionNew),
+    [position_setting(PositionNew)],
+    [],
+    [],
+    [],
+    [
+        del(position_setting(PositionNew)), 
         add(position_set(PositionNew))
     ]
 ).
@@ -35,24 +47,48 @@ action(
 ).
 
 action(
-    model_mapping(Model),
+    model_mapping_start(Model),
     [high_level_scanned],
-    [model_set(_)],
+    [model_set(_), model_setting(_)],
     [],
     [mdl(Model)],
     [
+        add(model_setting(Model))
+    ]
+).
+
+action(
+    model_mapping_end(Model),
+    [model_setting(Model)],
+    [],
+    [],
+    [],
+    [
+        del(model_setting(Model)),
         add(model_set(Model))
     ]
 ).
 
 action(
-    find_body_segment(blueP(Point)), 
+    find_body_segment_start(blueP(Point)), 
     [high_level_scanned, model_set(_), toScan(Point)], 
-    [identified_area(Point), marked(Point), scanned(Point)], 
+    [identified_area(Point), identified_area(Point), marked(Point), scanned(Point)], 
     [], 
     [bP(Point)], 
     [
         del(toScan(Point)),
+        add(identifing_area(Point))
+    ]
+).
+
+action(
+    find_body_segment_end(blueP(Point)), 
+    [identifing_area(Point)], 
+    [], 
+    [], 
+    [], 
+    [
+        del(identifing_area(Point)),
         add(identified_area(Point))
     ]
 ).
@@ -106,13 +142,25 @@ action(
 ).
 
 action(
-    sensor_fusion(Point), 
+    sensor_fusion_start(Point), 
     [palpated(Agent, Point), detailed_video_scanned(Agent, Point), identified_area(Point)], 
-    [marked(Point), scanned(Point)],
-    [scanned(Point)], 
+    [marked(Point), scanned(Point), marking(Point)], 
+    [], 
     [bP(Point)], 
     [
-        del(palpating(Agent, Point)), del(detailed_video_scanned(Agent, Point)), del(identified_area(Point)),
+        del(palpated(Agent, Point)), del(detailed_video_scanned(Agent, Point)), del(identified_area(Point)),
+        add(marking(Point))
+    ]
+).
+
+action(
+    sensor_fusion_end(Point), 
+    [marking(Point)], 
+    [],
+    [], 
+    [], 
+    [
+        del(marking(Point)),
         add(marked(Point))
     ]
 ).
@@ -121,7 +169,7 @@ action(
     gel_application_start(Agent, Point),
     [marked(Point), available(Agent)],
     [gel_appling(_, _), gel_applied(_, Point), scanned(Point)],
-    [scanned(Point)],
+    [],
     [gel_applier(Agent)],
     [
         del(available(Agent)),
@@ -145,7 +193,7 @@ action(
     scan_start(Agent, Point),
     [gel_applied(Point), available(Agent)],
     [scanning(_, Point), scanned(Point)],
-    [scanned(Point)],
+    [],
     [scanner(Agent)],
     [
         del(available(Agent)),

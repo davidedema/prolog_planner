@@ -1,17 +1,3 @@
-test1(Actions, Times) :- 
-    go(
-        [available(a1), available(a2), position_set(standing), toScan(bP1), toScan(bP2)],
-        [
-            available(a1), available(a2), 
-            position_set(supine), 
-            high_level_scanned, 
-            mdl(m2), 
-            scanned(bP1), scanned(bP2)
-        ],
-        Actions,
-        Times
-    ).
-
 testSetPos(Actions, Times) :- 
     go(
         [available(a1), available(a2), position_set(standing), toScan(bP1), toScan(bP2)],
@@ -33,7 +19,7 @@ testHighLevelScan(Actions, Times) :-
 testModelSelection(Actions, Times) :- 
     go(
         [available(a1), available(a2), position_set(standing), toScan(bP1), toScan(bP2)],
-        [available(a1), available(a2), model_set(m3), high_level_scanned, position_set(supine), toScan(bP1), toScan(bP2)],
+        [available(a1), available(a2), model_set(m1), high_level_scanned, position_set(supine), toScan(bP1), toScan(bP2)],
         Actions,
         Times,
         5
@@ -63,7 +49,7 @@ testDetailedVideoScannedBP2(Actions, Times) :-
         [available(a1), available(a2), model_set(m1), high_level_scanned, position_set(supine), identified_area(bP1), identified_area(bP2), detailed_video_scanned(a1, bP2)],
         Actions,
         Times,
-        10
+        15
     ).
 
 testDetailedVideoScanned(Actions, Times) :- 
@@ -72,7 +58,7 @@ testDetailedVideoScanned(Actions, Times) :-
         [available(a1), available(a2), model_set(m1), high_level_scanned, position_set(supine), identified_area(bP1), identified_area(bP2), detailed_video_scanned(a1, bP1), detailed_video_scanned(a1, bP2)],
         Actions,
         Times,
-        10
+        15
     ).
 
 testPalpationBP1(Actions, Times) :- 
@@ -118,7 +104,7 @@ testPalpation(Actions, Times) :-
         [available(a1), available(a2), model_set(m1), high_level_scanned, position_set(supine), identified_area(bP1), identified_area(bP2), detailed_video_scanned(a1, bP1), detailed_video_scanned(a1, bP2), palpated(a1, bP2), palpated(a1, bP1)],
         Actions,
         Times,
-        15
+        20
     ).
 
 testPalpationCross(Actions, Times) :- 
@@ -127,7 +113,7 @@ testPalpationCross(Actions, Times) :-
         [available(a1), available(a2), model_set(m1), high_level_scanned, position_set(supine), identified_area(bP1), identified_area(bP2), detailed_video_scanned(a1, bP1), detailed_video_scanned(a1, bP2), palpated(a2, bP1), palpated(a2, bP2)],
         Actions,
         Times,
-        15
+        20
     ).
 
 testPalpationSim(Actions, Times) :- 
@@ -136,7 +122,7 @@ testPalpationSim(Actions, Times) :-
         [available(a1), available(a2), model_set(m1), high_level_scanned, position_set(supine), identified_area(bP1), identified_area(bP2), detailed_video_scanned(a1, bP1), detailed_video_scanned(a1, bP2), palpated(a2, bP1), palpated(a1, bP2)],
         Actions,
         Times,
-        15
+        20
     ).
 
 testPalpationNoVideo(Actions, Times) :- 
@@ -145,7 +131,7 @@ testPalpationNoVideo(Actions, Times) :-
         [available(a1), available(a2), model_set(m1), high_level_scanned, position_set(supine), identified_area(bP1), identified_area(bP2), palpated(a1, bP2), palpated(a1, bP1)],
         Actions,
         Times,
-        10
+        15
     ).
 
 testPalpationSimNoVideo(Actions, Times) :- 
@@ -154,21 +140,93 @@ testPalpationSimNoVideo(Actions, Times) :-
         [available(a1), available(a2), model_set(m1), high_level_scanned, position_set(supine), identified_area(bP1), identified_area(bP2), palpated(a2, bP1), palpated(a1, bP2)],
         Actions,
         Times,
-        10
+        15
     ).
 
 testMarkedBP1(Actions, Times) :-
     go(
         [available(a1), available(a2), position_set(standing), toScan(bP1), toScan(bP2)],
-        [available(a1), available(a2), model_set(m1), high_level_scanned, position_set(supine), marked(bP1), toScan(bP1)],
+        [available(a1), available(a2), model_set(m1), high_level_scanned, position_set(supine), marked(bP1), toScan(bP2)],
         Actions,
         Times,
-        10
+        15
+    ).
+
+testMarkedBP2(Actions, Times) :-
+    go(
+        [available(a1), available(a2), position_set(standing), toScan(bP1), toScan(bP2)],
+        [available(a1), available(a2), model_set(m1), high_level_scanned, position_set(supine), marked(bP2), toScan(bP1)],
+        Actions,
+        Times,
+        15
+    ).
+
+testMarked(Actions, Times) :- 
+    go(
+        [available(a1), available(a2), position_set(standing), toScan(bP1), toScan(bP2)],
+        [available(a1), available(a2), model_set(m1), high_level_scanned, position_set(supine), marked(bP2), marked(bP1)],
+        Actions,
+        Times,
+        25
+    ).
+
+testGelAppliedBP1(Actions, Times) :- 
+    go(
+        [available(a1), available(a2), position_set(standing), toScan(bP1), toScan(bP2)],
+        [available(a1), available(a2), model_set(m1), high_level_scanned, position_set(supine), toScan(bP2), marked(bP1), gel_applied(bP1)],
+        Actions,
+        Times,
+        15
+    ).
+
+testGelAppliedBP2(Actions, Times) :- 
+    go(
+        [available(a1), available(a2), position_set(standing), toScan(bP1), toScan(bP2)],
+        [available(a1), available(a2), model_set(m1), high_level_scanned, position_set(supine), toScan(bP1), marked(bP2), gel_applied(bP2)],
+        Actions,
+        Times,
+        15
+    ).
+
+testGelApplied(Actions, Times) :- 
+    go(
+        [available(a1), available(a2), position_set(standing), toScan(bP1), toScan(bP2)],
+        [available(a1), available(a2), model_set(m1), high_level_scanned, position_set(supine), marked(bP1), gel_applied(bP1), marked(bP2), gel_applied(bP2)],
+        Actions,
+        Times,
+        25
+    ).
+
+testScanBP1(Actions, Times) :- 
+    go(
+        [available(a1), available(a2), position_set(standing), toScan(bP1), toScan(bP2)],
+        [available(a1), available(a2), model_set(m1), high_level_scanned, position_set(supine), toScan(bP2), scanned(bP1)],
+        Actions,
+        Times,
+        20
+    ).
+
+testScanBP2(Actions, Times) :- 
+    go(
+        [available(a1), available(a2), position_set(standing), toScan(bP1), toScan(bP2)],
+        [available(a1), available(a2), model_set(m1), high_level_scanned, position_set(supine), toScan(bP1), scanned(bP2)],
+        Actions,
+        Times,
+        20
+    ).
+
+testScan(Actions, Times) :- 
+    go(
+        [available(a1), available(a2), position_set(standing), toScan(bP1), toScan(bP2)],
+        [available(a1), available(a2), model_set(m1), high_level_scanned, position_set(supine), scanned(bP1), scanned(bP2)],
+        Actions,
+        Times,
+        30
     ).
 
 
 
-testCase(A, T) :- test2(A, T).
+testCase(A, T) :- testModelSelection(A, T).
 
 testNoTrace :- testCase(_A, _T).
 testTrace :- leash(-all),trace,testCase(_A,_T).
@@ -183,3 +241,5 @@ testSmallTrace :-
 	trace(testPlan, all),
 	trace(stack, all),
 	testCase(_A, _T).
+
+
