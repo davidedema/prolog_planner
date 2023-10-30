@@ -6,8 +6,8 @@ killall swipl
 ret=$?
 if [ $ret == 0 ]; then 
   echo "Executing for 10s"
-  swipl -l $1 -t 'set_prolog_flag(debugger_write_options,[max_depth(0)]),testSmallTrace' &> tmp.txt &
-  sleep 10                                                                   
+  swipl -l $1 -t 'set_prolog_flag(debugger_write_options,[max_depth(0)]),testTrace' &> tmp.txt &
+  sleep 5                                                                   
   killall swipl                                                              
 else                                                                         
   echo "Executing until end"                                                 

@@ -24,22 +24,17 @@
 
 :- include('adts.pl').
 :- include('actions.pl').
+:- include('kb.pl').
 
 :- dynamic ontable/3.
 :- dynamic available/1.
 :- dynamic on/4.
 :- dynamic clear/1.
-:- dynamic pos/2.
 :- discontiguous action/6.
 
-pos(1,2).
-pos(1,3).
-pos(2,1).
-pos(2,3).
-
 ground_g([]).
-ground_g([H|T]) :-
-	assertz(H),
+ground_g([_H|T]) :-
+	% assertz(H),
 	ground_g(T).
 
 achiever([HP|_TP], [add(HP)|_TE], _).
@@ -180,7 +175,15 @@ go(S, G, Actions, Times) :-
 	retractall(clear(_)),
 	retractall(available(_)),
 	ground_g(G), 
-	plan(S, G, [S], [], [], 25, Actions, Times).
+	plan(S, G, [S], [], [], 10, Actions, Times).
+
+go(S, G, Actions, Times, MaxDepth) :- 
+	retractall(ontable(_, _, _)),
+	retractall(on(_, _, _, _)),
+	retractall(clear(_)),
+	retractall(available(_)),
+	ground_g(G), 
+	plan(S, G, [S], [], [], MaxDepth, Actions, Times).
  	%try_plan(S, G, [S], [], [], 0, Actions, Times).
 
 
