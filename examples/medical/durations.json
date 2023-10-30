@@ -1,0 +1,38 @@
+{
+    "set_position" : {
+        "lower" : 3,
+        "upper" : 5
+    },
+    "high_level_scan" : {
+        "lower" : 6,
+        "upper" : 10
+    },
+    "model_mapping"  : {
+        "lower" : 4,
+        "upper" : 7
+    },
+    "find_body_segment" : {
+        "lower" : 10,
+        "upper" : 20
+    },
+    "detailed_vide_scan" : {
+        "lower" : 10,
+        "upper" : 20
+    },
+    "palpation"  : {
+        "lower" : 15, 
+        "upper" : 30
+    },
+    "sensor_fusion"  : {
+        "lower" : 5,  
+        "upper" : 10
+    },
+    "gel_application"  : {
+        "lower" : 5,  
+        "upper" : 10
+    },
+    "scan"  : {
+        "lower" : 5,  
+        "upper" : 10
+    }
+}

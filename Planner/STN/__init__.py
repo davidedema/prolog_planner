@@ -1,6 +1,7 @@
 import networkx as nx
 import re
 import matplotlib.pyplot as plt
+import json
 
 class SimpTempNet(nx.DiGraph):
     def __init__(self, actions, times):
@@ -31,6 +32,88 @@ class SimpTempNet(nx.DiGraph):
         return self.nodes[node_id]['related'][0]
 
     def addDurations(self, Actions, Times):
+        durationsJSON = None
+        with open("examples/medical/durations.json", "r") as json_file:
+            durationsJSON = json.load(json_file)
+
+        for i in range(len(Actions)):
+            matchStart = re.search(r'(?P<actionName>[a-zA-Z_]+)_start\((?P<args>.*)\).*', str(Actions[i]))
+            if matchStart:
+                # Check that the starting action is in the JSON
+                if matchStart["actionName"] not in durationsJSON.keys():
+                    print(durationsJSON)
+                    raise Exception("Cannot find {} in the JSON file".format(matchStart["actionName"]))
+                # Set the ending regex
+                if "re_end" in durationsJSON[matchStart['actionName']]:
+                    endRegex = durationsJSON[matchStart['actionName']]["re_end"]
+                else:
+                    endRegex = r'{}_end(\{\}).*'.format(matchStart['actionName'])
+
+                print(matchStart['actionName'], matchStart['args'], endRegex)
+                j = i + 1
+                n = None
+                # Then look for the ending action
+                while j < len(Actions) and n == None:
+                    n = re.search(endRegex.format(matchStart['args']), str(Actions[j]))
+
+                    if "grip" in matchStart['actionName']:
+                        matchEnd = re.search(r'grip_end\({}\).*'.format(matchStart['args']), str(Actions[j]))
+                        if matchEnd:
+                            if "ontable" in matchStart['actionName']:
+                                super(SimpTempNet, self).add_edge(i+1, j+1, weight = GRIP_ONT['upper'])
+                                super(SimpTempNet, self).add_edge(j+1, i+1, weight = -1 * GRIP_ONT['lower'])
+                            elif "buffer" in matchStart['actionName']:
+                                super(SimpTempNet, self).add_edge(i+1, j+1, weight = GRIP_BUF['upper'])
+                                super(SimpTempNet, self).add_edge(j+1, i+1, weight = -1 * GRIP_BUF['lower'])
+                            else:
+                                super(SimpTempNet, self).add_edge(i+1, j+1, weight = GRIP_ON['upper'])
+                                super(SimpTempNet, self).add_edge(j+1, i+1, weight = -1 * GRIP_ON['lower'])
+                            attr = super(SimpTempNet, self).nodes[i+1]
+                            attr['related'] = (j+1, super(SimpTempNet, self).nodes[j+1])
+                            attr = super(SimpTempNet, self).nodes[j + 1]
+                            attr['related'] = (i+1, super(SimpTempNet, self).nodes[i+1])
+
+                    if "move" in matchStart['actionName']:
+                        matchEnd = re.search(r'move_block_to_table_end\({}.*'.format(matchStart['args']), str(Actions[j]))
+                        succ = False
+                        if matchEnd:
+                            super(SimpTempNet, self).add_edge(i+1, j+1, weight = MOVE_ONT['upper'])
+                            super(SimpTempNet, self).add_edge(j+1, i+1, weight = -1 * MOVE_ONT['lower'])
+                            succ = True
+                        else:
+                            matchEnd = re.search(r'move_block_to_on_end\({}.*'.format(matchStart['args']), str(Actions[j]))
+                            if matchEnd:
+                                super(SimpTempNet, self).add_edge(i+1, j+1, weight = MOVE_ON['upper'])
+                                super(SimpTempNet, self).add_edge(j+1, i+1, weight = -1 * MOVE_ON['lower'])
+                                succ = True
+                            else:
+                                matchEnd = re.search(r'move_block_to_buffer_end\({}.*'.format(matchStart['args']), str(Actions[j]))
+                                if matchEnd:
+                                    super(SimpTempNet, self).add_edge(i+1, j+1, weight = MOVE_BUF['upper'])
+                                    super(SimpTempNet, self).add_edge(j+1, i+1, weight = -1 * MOVE_BUF['lower'])
+                                    succ = True
+                        if succ:
+                            attr = super(SimpTempNet, self).nodes[i+1]
+                            attr['related'] = (j+1, super(SimpTempNet, self).nodes[j+1])
+                            attr = super(SimpTempNet, self).nodes[j + 1]
+                            attr['related'] = (i+1, super(SimpTempNet, self).nodes[i+1])
+                    if "release" in matchStart['actionName']:
+                        matchEnd = re.search(r'release_end\({}\).*'.format(matchStart['args']), str(Actions[j]))
+                        if matchEnd:
+                            super(SimpTempNet, self).add_edge(i+1, j+1, weight = RELEASE['upper'])
+                            super(SimpTempNet, self).add_edge(j+1, i+1, weight = -1 * RELEASE['lower'])
+                            attr = super(SimpTempNet, self).nodes[i+1]
+                            attr['related'] = (j+1, super(SimpTempNet, self).nodes[j+1])
+                            attr = super(SimpTempNet, self).nodes[j + 1]
+                            attr['related'] = (i+1, super(SimpTempNet, self).nodes[i+1])
+                    j += 1
+
+                if matchEnd == None and j == len(Actions):
+                    raise Exception("Actions {}({}) did not end".format(matchStart['actionName'], matchStart['args']))
+
+
+
+    def addDurationsBlocks(self, Actions, Times):
         GRIP_ONT = {'lower' : 3,  'upper' : 5}
         GRIP_BUF = {'lower' : 6,  'upper' : 10}
         GRIP_ON  = {'lower' : 4,  'upper' : 7}

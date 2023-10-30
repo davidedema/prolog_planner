@@ -47,13 +47,13 @@ achiever([HP|TP], [HE|TE], U) :-
 partial_order(_PT, [], [], 0).
 
 partial_order(PT, [AH|AT], [I|Times], I) :-
-  action(AH, _, _, _, E, _),
+  action(AH, _, _, _, _, E),
   achiever(PT, E, []),
   NewI is I-1,
   partial_order(PT, AT, Times, NewI).
 
 partial_order(PT, [AH|AT], Times, I) :-
-  action(AH, _, _, _, E, _),
+  action(AH, _, _, _, _, E),
   \+achiever(PT, E, []),
   NewI is I-1,
   partial_order(PT, AT, Times, NewI).
