@@ -10,14 +10,14 @@
 - [Project Description](#project-description)
 - [Project Structure](#project-structure)
 - [Requirements](#requirements)
+  - [LLM KB Generation](#llm-kb-generation)
   - [PROLOG ONLY](#prolog-only)
-  - [PROLOG + ROS SIMULATION](#prolog--ros-simulation)
 - [Installation](#installation)
+  - [LLM KB Generation](#llm-kb-generation-1)
   - [PROLOG ONLY](#prolog-only-1)
-  - [PROLOG + ROS SIMULATION](#prolog--ros-simulation-1)
 - [Running](#running)
+  - [LLM KB Generation](#llm-kb-generation-2)
   - [PROLOG ONLY](#prolog-only-2)
-  - [PROLOG + ROS SIMULATION](#prolog--ros-simulation-2)
 - [Known issues and future works](#known-issues-and-future-works)
   - [Issues](#issues)
   - [Future works](#future-works)
@@ -46,21 +46,24 @@ The main folder is:
 For installing the requirements I suggest to follow the
 [Installation](#installation) section.
 
+### LLM KB Generation
+The requirements can be found inside the `requiremens.txt` file inside the `llm_kb_generation` folder. 
+
+
 ### PROLOG ONLY
 For the prolog only version you will only need the [SWI Prolog](https://www.swi-prolog.org/build/PPA.html) interpeter.
-
-### PROLOG + ROS SIMULATION
-For the ROS simulation you will need:
-- [SWI Prolog](https://www.swi-prolog.org/build/PPA.html) interpeter
-- [ROS noetic](http://wiki.ros.org/noetic)
-- Python verion >= 3.8
-- [Locosim framework](https://github.com/mfocchi/locosim) for simulating the UR5.
-- [Pyswip](https://github.com/yuce/pyswip)
 
 
 ## Installation
 
-I reccomend to use Ubuntu 20.04 (I used it for developing the project) 
+I reccomend to use Ubuntu 20.04 (I used it for developing the project)
+
+### LLM KB Generation
+Run `pip3` to install the requirements:
+
+```bash
+python3 -m pip install -U -r llm_kb_gen/requirements.txt
+```
 
 ### PROLOG ONLY
 1) For testing the *prolog only* version at first install the prolog interpreter [SWI Prolog](https://www.swi-prolog.org/build/PPA.html). Installation is the following:
@@ -78,24 +81,37 @@ I reccomend to use Ubuntu 20.04 (I used it for developing the project)
     cd ~/prolog_planner
     swipl block_world.pl
     ```
-### PROLOG + ROS SIMULATION
-1) Follow the prolog installation (only step 1 and 2)
-2) Install [**Pyswip**](https://github.com/yuce/pyswip)
-    ```BASH
-    pip3 install git+https://github.com/yuce/pyswip@master#egg=pyswip
-    ```
-3) Follow the [locosim](https://github.com/mfocchi/locosim) repository for installing ROS and the UR5 simulation
-4) Clone this repository inside `~/ros_ws/src`
-    ```
-    git clone https://github.com/davidedema/prolog_planner
-    ```
-5) Build the project
-    ```
-    cd ~/ros_ws
-    catkin_make install
-    source install/setup.bash
-    ```
+
 ## Running
+
+### LLM KB Generation
+You can run the knowledge creation by calling the python script `gpt_convo.py`. It uses few-shots learning to teach the LLM how to respond. The examples are in the `few-shots.yaml` file, but other files can be added by using hte `-y/--yaml-files` arguments:
+
+```bash
+python3 llm_kb_gen/gtp_convo.py -y ./llm_kb_gen/few-shots1.yaml ./llm_kb_gen/few-shots2.yaml
+```
+
+If not YAML file is passed, the default one will be used.
+
+Notice that the structure of the YAML file should be:
+```YAML
+few_shots:
+  system_msg:
+    role: 
+    content: 
+  convo:
+    0:
+      Q:
+        role:
+      A:
+        content:
+    1:
+      Q:
+        role:
+      A:
+        content:
+```
+The `system_msg` field should be defined only in one file though. 
 
 ### PROLOG ONLY
 In order to create a pillar use the `pillar/7` rule. This needs 7 parameters in input:
@@ -122,30 +138,6 @@ A = [rotate(b1, 0.27, -0.26, 0.685, 1), move(b1, 0.27, -0.26, 0.685, 1, 0, 0), m
 ```
 We can see the freshly created pillar with the instruction `listing(block/13).`
 
-### PROLOG + ROS SIMULATION
-Before running the simulation we need to setup some parameters for the robot:
-- **ENABLE GRIPPER**
-    - Edit the file `/locosim/robot_control/lab_exercises/lab_palopoli/params.py` at line 44 and 45: set the two flags at **True**. Now the 2 finger gripper and grasping plugin is enabled.
-- **SETUP THE WORLD**
-    - Copy the `X1-Y1-Z2` folder (is the folder model) inside `/locosim/ros_impedance_controller/worlds/models/`
-    - Overwrite the world file: `/locosim/ros_impedance_controller/worlds/tavolo.world` with the *tavolo.world* inside this repository
-- After these two changes run:
-    ```
-    cd ~/ros_ws
-    catkin_make install
-    source install/setup.bash
-    ```
-
-Now you are able to run the simulation with the command:
-```
-python3 -i ~/ros_ws/src/locosim/robot_control/lab_exercises/lab_palopoli/ur5_generic.py
-```
-To enable the two nodes (motion and prolog planner) run these two commands in two separated terminal
-```
-python3 -i ~/ros_ws/src/prolog_project/prolog_project/scripts/motion_node.py
-python3 -i ~/ros_ws/src/prolog_project/prolog_project/scripts/prolog_node.py
-```
-
 
 ## Known issues and future works
 
@@ -159,6 +151,7 @@ python3 -i ~/ros_ws/src/prolog_project/prolog_project/scripts/prolog_node.py
 ## Contributors
 - Enrico Saccon: enrico.saccon@unitn.it
 - Ahmet Tikna: ahmet.tikna@unitn.it
+- Syed Ali Usama: aliusama.syed@unitn.it
 - Davide De Martini: davide.demartini@studenti.unitn.it
 - Edoardo Lamon: edoardo.lamon@unitn.it
 - Marco Roveri: marco.roveri@unitn.it

@@ -1,0 +1,604 @@
+few_shots:
+  system_msg:
+    role: 'system'
+    content: "Given a robotic problem, produce knowledge base in Prolog format"
+  convo:
+    ############################################################################
+    ###############################     0     ##################################
+    ############################################################################
+    0: 
+      Q: 
+        role: 'user'
+        content: | 
+          We describe each state by a list of predicates, which define the position of the blocks and the status of the agents. 
+          For example, ontable(Block, X, Y) describes the fact that a block is on the table at coordinates (X, Y).
+          available(Agent) states that an agent is available to be used.
+          gripped(Agent, Block) states that a block is gripped by an agent.
+          gripped(_, Block) states that a block is gripped by any agent.
+
+          In our knowledge base, every action is splitted into 'start' and 'end' actions for both durative and instantaneous actions.
+          Our knowledge base is composed of predicates to describe the states, and Prolog rules that describe the actions leveraging the following structure:    
+          action(Name(Argument1, Argument2, ...), [ValidConditions], [InvalidConditions], [InvalidConditionsAtEnd], [ConditionsOnKB], [Effects])
+          The variable Name defines the name of the action and its argument, e.g., for the action corresponding to the gripping of an agent on a block, we use Name=grip(Agent,Block).
+          The five variables that follow are lists of conditions that must be checked before deciding whether to add the action or not:                     
+          - ValidConditions contains conditions that should be verified in the current state;
+          - InvalidConditions contains conditions that must not be verified in the current state;
+          - ValidConditionsAtEnd contains conditions that must not be verified in the goal;
+          - ConditionOnKB contains conditions that must be verified on the knowledge base before deciding on the action.
+          - Effects contains a list of predicates on how to modify the current state in a new state. Each predicate is in the form of either add(P(...)), which adds P(...) to the state, or del(P(...)), which looks for P(...) in the current state and removes it.
+
+          The list ValidConditionsAtEnd checks if a condition from the goal has already been achieved and avoids actions which may make one of the contained conditions not to hold.
+          ConditionOnKB is a list used to force the Prolog interpreter to ground the variables of the action to some values.
+
+          In particular, the knowledge base is composed of predicates: 
+          - pos(X,Y), which indicates positions that may be used by the agents to temporarily store blocks;
+          - The predicates inside the goal state.
+          
+          The reason for adding the goal state to the knowledge base is to avoid adding trivial and useless actions.
+          Indeed, the search in Prolog is not guided and if we were not to match the goal when choosing an action, the search would be completely unguided and the program may add useless actions such as the movement of a block in the same position.
+          To query for a solution, we provide the initial and final states as input parameters to the go function. This function serves as a convenient wrapper for the plan function, which is responsible for the actual plan-finding process.
+                          
+          Can you generate a prolog code including a set of actions in order for an agent to grip a block on the table at coordinate(X,Y) in accrodance with the information provided above?
+      A: 
+        role : 'assistant' 
+        content: | 
+          Sure, here is the Prolog code:
+          ```prolog
+          %  /# of parameters for given predicate
+          :- dynamic ontable/3.
+          :- dynamic available/1.
+          :- dynamic clear/1.  
+          :- dynamic gripping/2.
+          :- dynamic gripped/2.
+          :- discontiguous action/6.    
+
+          % The robot starts to grip the block
+          action(
+          grip_ontable_start(Agent, Block), 
+          [ontable(Block, X, Y), available(Agent), clear(Block)],
+          [gripped(_, Block), gripping(_, Block)],
+          [ontable(Block, X, Y)],
+          [],
+          [del(available(Agent)), add(gripping(Agent, Block))]
+          ).                           
+
+          % The robot finalize gripping the block
+          action(grip_end(Agent, Block),
+          [gripping(Agent, Block)],
+          [],
+          [],
+          [],
+          [del(clear(Block)), del(gripping(Agent, Block)), add(gripped(Agent, Block))]
+          ).
+          ```
+          The above prolog code involving start and end actions allows an agent(robot) to grip an object. 
+          The predicate 'clear' represents that there is no other block above the given block. 
+          In order for the agent to start performing the gripping action, the object must not be held by another agent. Therefore, it is pointed out in the 'InvalidConditions' of the 'grip_ontable_start' action that the target object(Block1) must not be in the 'gripped' or 'gripping' conditions.
+          The predicate 'gripped' represents that the target object is already gripped by an agent.
+          The predicate 'gripping'  represents that an agent has started to perform gripping action but not finalized it yet.               
+          A gripping action can only be finalized when the agent has already begun gripping. Therefore, gripping(Agent1, Block1) is in the ValidConditions.
+                                
+          In InvalidConditions of the action 'grip_ontable_start', [gripped(_, Block), gripping(_, Block)] implies that the object must not have already been held or started to be held by any robot.
+    
+    ###########################################################################
+    ##############################     1     ##################################
+    ###########################################################################
+    1:
+      Q:
+        role: 'user'
+        content: | 
+          Can you generate a prolog code including a set of actions in order for an agent to grip a block on the table at coordinate(X,Y)?
+      A:
+        role : 'assistant'
+        content: |
+          Sure, here is the Prolog code: 
+          ```prolog
+          onTable(Block2, X, Y), clear(Block2)
+          ```
+    ############################################################################
+    ###############################     2     ##################################
+    ############################################################################
+    2:
+      Q: 
+        role: 'user'
+        content: |     
+          Can you create a set of predicates respresenting the fact that the block 2 and block 3 are stacked from top to bottom on the table at coordinates (X,Y)?
+    
+      A:
+        role: 'assistant'
+        content: |
+          Sure, here is the Prolog code: 
+          ```prolog
+          onTable(Block3, X, Y), on(b2, b3, X, Y), clear(Block2)
+          ```            
+    ############################################################################
+    ###############################     3     ##################################
+    ############################################################################
+    3:
+      Q: 
+        role: 'user'
+        content: |     
+          Can you create a set of predicates respresenting the fact that the block 3 is on the table at coordinates (3,5)?
+      A:
+        role: 'assistant'
+        content: |
+          Sure, here is the Prolog code: 
+          ```prolog
+          onTable(Block3, 3, 5), clear(Block3)
+          ```    
+    ############################################################################
+    ###############################     4     ##################################
+    ############################################################################
+    4:
+      Q:
+        role: 'user'
+        content: |     
+          Can you create a set of predicates respresenting the fact that the block 2 is on the table at coordinates (7,-5)?
+      
+      A: 
+        role: 'assistant'
+        content: |
+          Sure, here is the Prolog code: 
+          ```prolog
+          onTable(Block2, 7, -5), clear(Block2)
+
+          ```       
+          Above prolog code respresents that the block 2 is on the table at the point (7,-5) and there is no other block on top of it.
+
+    ############################################################################
+    ###############################     5     ##################################
+    ############################################################################
+    5:
+      Q:
+        role: 'user'
+        content: |     
+          Can you create a set of predicates respresenting the fact that the block 1 is on the table at the point (7,-5) and the block 2 and block 3 are stacked from top to bottom on the table at coordinates (3,3)?
+            
+      A: 
+        role: 'assistant'
+        content: |
+          Sure, here is the Prolog code: 
+          ```prolog
+          onTable(Block3, 3, 3), on(Block2, Block3, 3, 3) ,onTable(Block1, 7, -5), clear(Block1), clear(Block2)
+          ```
+          The predicate 'onTable' implies the block is placed on a table. On the other hand, the predicate 'on' implies that the block is on top of another block at given coordinates.  
+          Above prolog code respresents that the block 1 is on the table at the point (7,-5) and the block 2 and block 3 are stacked from top to bottom on the table at coordinates (3,3).
+
+    ############################################################################
+    ###############################     6     ##################################
+    ############################################################################
+    6:
+      Q:
+        role: 'user'
+        content: |
+          Can you create a set of predicates respresenting the fact that the block 1 is on the table at the point (7,-5) and the block 3 is stacked on the table at coordinates (3,3)?    
+      A: 
+        role: 'assistant'
+        content: |
+          Sure, here is the Prolog code: 
+          ```prolog
+          onTable(Block3, 3, 3),onTable(Block1, 7, -5), clear(Block1), clear(Block3)
+          ```       
+    ############################################################################
+    ###############################     7     ##################################
+    ############################################################################
+    7:
+      Q:
+        role: 'user'
+        content: |
+          We describe each state by a list of predicates, which define the position of the blocks and the status of the agents.
+          Can you create a set of predicates stating that agent 1 is available to be used?
+      A: 
+        role: 'assistant'
+        content: |
+          Sure, here is the Prolog code: 
+          ```prolog
+          available(Agent1)
+          ```    
+    ############################################################################
+    ###############################     8     ##################################
+    ############################################################################
+    8:
+      Q:
+        role: 'user'
+        content: |   
+          Can you create a set of predicates stating that agent 2 is available to be used?
+      A: 
+        role: 'assistant'
+        content: |
+          Sure, here is the Prolog code: 
+          ```prolog
+          available(Agent2)
+          ```    
+    ############################################################################
+    ###############################     9     ##################################
+    ############################################################################
+    9:
+      Q:
+        role: 'user'
+        content: |
+          Can you create a set of predicates stating that agent 1 and agent 2 are available to be used and the block 2 and block 4 are on the table at coordinates (7,-5) and (5,-7), respectively?
+      A: 
+        role: 'assistant'
+        content: |
+          Sure, here is the Prolog code: 
+          ```prolog
+          available(Agent1), available(Agent2), onTable(Block2, 7, -5), onTable(Block4, 5, -7), clear(Block2), clear(Block4)
+          ```    
+
+    ############################################################################
+    ###############################     10     ##################################
+    ############################################################################
+    10:
+      Q:
+        role: 'user' 
+        content: |
+          We describe each state by a list of predicates, which define the position of the blocks and the status of the agents. Can you create a set predicates respresenting the fact that the block 1 is on the table at coordinates (X,Y)?
+      A: 
+        role: 'assistant'
+        content: |
+          Sure , here is the Prolog code: 
+          ```prolog
+          onTable(Block1, X, Y), clear(Block1)
+          ```
+
+    ############################################################################
+    ###############################     11     ##################################
+    ############################################################################
+    11:
+      Q: 
+        role: 'user'
+        content: |
+          Can you generate a prolog code including a set of actions in order for an agent to grip a block on the table at coordinate(X,Y)?    
+      A: 
+        role: 'assistant'
+        content: |
+          Sure, here is the Prolog code for the action template:
+          ```prolog
+          % The robot starts to put water in a kettle
+          action(fill_kettle_start, 
+              [at(robot, kitchen), holding(kettle), empty(kettle)], 
+              [full(kettle)], 
+              [], 
+              [],
+              [del(empty(kettle))]).
+
+
+          % The robot stops to put water in a kettle
+          action(fill_kettle_end, 
+              [at(robot, kitchen), holding(kettle)], 
+              [empty(kettle)], 
+              [], 
+              [],
+              [add(full(kettle)), add(cold(water))]).
+          ```
+          In InvalidConditions of the action 'fill_kettle_start', [full(kettle)] implies that the kettle must not have already been full.
+          In InvalidConditions of the action 'fill_kettle_end', [full(kettle)] implies that the action of filling the kettle can not be finalized if the kettle is empty.
+
+    ############################################################################
+    ###############################     12     ##################################
+    ############################################################################
+    12:
+      Q: 
+        role: 'user'
+        content: |
+          Can you generate a prolog code including a set of actions in order for an agent to grip the block Block2 placed on the block Block1 at coordinate(X,Y)?
+      A: 
+        role: 'assistant'
+        content: |
+          Sure, here is the Prolog code:
+          ```prolog
+          action(
+              grip_on_start(Agent, Block), 
+              [on(Block, Block1, X, Y), available(A), clear(Block)],
+              [gripped(_, Block), gripping(_, Block)],
+              [on(B, B1, X, Y)],
+              [],
+              [del(available(A)), add(gripping(A, B))]
+          ).
+
+          action(grip_end(Agent, Block),
+          [gripping(Agent, Block)],
+          [],
+          [],
+          [],
+          [del(clear(Block)), del(gripping(Agent, Block1)), add(gripped(Agent, Block))]
+          ).
+          ```
+    ############################################################################
+    ###############################     13     ##################################
+    ############################################################################
+    13:
+      Q: 
+        role: 'user'
+        content: |
+          Can you tell me about ultrasound chest examination and how it should be done?
+
+    
+      A: 
+        role: 'assistant'
+        content: |
+          A chest ultrasound is a noninvasive diagnostic exam that produces images, which used to assess the organs and structures within the chest, such as the lungs, mediastinum (area in the chest containing the heart, aorta, trachea, esophagus, thymus, and lymph nodes), and pleural space (space between the lungs and the interior wall of the chest). Ultrasound technology allows quick visualization of the chest organs and structures from outside the body. Ultrasound may also be used to assess blood flow to chest organs.                           
+          The BLUE protocol is a useful chest screening algorithm to identify the cause of acute respiratory distress. According to the BLUE protocol, there are uppper and lower BLUE points on the each side of the chest. The upper BLUE point is a few centimeter below the collarbone and the lower BLUE point is a few centimeters above the nipple. In order to carry out a chest ultrasound examination, the BLUE points must be found on both right and left part of the chest.                           
+          
+          Here are the steps of the ultrasound chest examination:
+          1. Human-body positioning: The robot transfers the patient from his or her old position(seated) to a new position(supine). It is enough for patient to be positioned once in the supine position only by single agent(robot)
+          2. High-level Scan: Acqire an image of the whole body to know the position of the patient
+          3. Model Mapping: Check the acquired image against information about the human body. This is done to check if the image has been acquired preciesely
+          4. Find body segmant: The blue point exist in the upper body area. There are four regions of interest in chest where blue points are located: upper segment of right side of the chest, lower segment of right side of the chest, upper segment of left side of the chest, and lower segment of left side of the chest
+          5. Detailed video scan: This scan will be conducted in the defined regions of interest to find the blue points
+          6. Palpation: Use the tactile sensor to collect information using force feedback from human body 
+          7. Sensor Fusion: Identify anatomical landmarks by combining the information acquired by the images in the 5th step and tactile sensor in the 6th step
+          8. Gel application: (The robot do it) Put the gel on the identified areas
+          9. Scan: Scan the identified area to find the blue points. Store these images for further examination from the physician
+    
+    ############################################################################
+    ###############################     14     ##################################
+    ############################################################################
+    14:
+      Q: 
+        role: 'user'
+        content: |
+          There is a service robot, a teabag, an empty kettle, and an empty cup in the kitchen. The service robot is tasked with preparing tea.
+          Can you generate a prolog code including a set of actions in order for robot to fulfill the given task?    
+      A: 
+        role: 'assistant'
+        content: |
+          % The robot starts to hold an object
+          action(hold_start(Object),
+              [available(robot), at(robot, Place), at(Object, Place)], 
+              [holding(_)], 
+              [], 
+              [],
+              [del(available(robot)), del(at(Object, Place)), add(holding(Object))]).
+
+
+          % The robot stops to hold an object
+          action(hold_end(Object), 
+              [holding(Object)], 
+              [], 
+              [], 
+              [],
+              [del(holding(Object)), add(available(robot)), add(at(Object, kitchen))]).
+
+
+          % The robot starts to put water in a kettle
+          action(fill_kettle_start, 
+              [at(robot, kitchen), holding(kettle), empty(kettle)], 
+              [full(kettle)], 
+              [], 
+              [],
+              [del(empty(kettle))]).
+
+
+          % The robot stops to put water in a kettle
+          action(fill_kettle_end, 
+              [at(robot, kitchen), holding(kettle)], 
+              [empty(kettle)], 
+              [], 
+              [],
+              [add(full(kettle)), add(cold(water))]).
+
+
+          % The robot starts to boil water in kettle and the water is not cold anymore
+          action(boil_water_start, 
+              [at(robot, kitchen), holding(kettle), full(kettle), cold(water)], 
+              [empty(kettle), boiled(water)], 
+              [],
+              [], 
+              [del(cold(water))]).
+
+
+          % The robot stops to boil water in kettle 
+          action(boil_water_end,
+              [at(robot, kitchen), holding(kettle), full(kettle)],
+              [cold(water)],
+              [],
+              [],
+              [add(boiled(water))]).
+
+
+          % The robot starts to put water in a cup from a kettle
+          action(pour_water_start,
+              [at(robot, kitchen), holding(kettle), full(kettle), boiled(water), empty(cup), at(cup, kitchen)], 
+              [empty(kettle), full(cup)],
+              [],
+              [],
+              [del(empty(cup)), del(full(kettle))]).
+
+
+          % The robot stops to put water in a cup from a kettle
+          action(pour_water_end,
+              [at(robot, kitchen), holding(kettle), boiled(water), at(cup, kitchen)],
+              [],
+              [],
+              [],
+              [add(full(cup))]).
+
+
+          % The robot puts a teabag in a cup
+          action(add_teabag, 
+              [at(robot, kitchen), holding(teabag), at(cup, kitchen), boiled(water), full(cup), tea(notready)], 
+              [], 
+              [], 
+              [],
+              [del(tea(notready)), add(tea(ready)), add(available(robot)), del(holding(teabag)), del(boiled(water))]).
+    
+    ############################################################################
+    ###############################     15     ##################################
+    ############################################################################
+    15:
+      Q: 
+        role: 'user'
+        content: |
+          To query for a solution, we provide the initial and final states as input parameters to the go function. This function serves as a convenient wrapper for the plan function, which is responsible for the actual plan-finding process.
+
+          Consider the following test cases.
+          Each of them moves a set of boxes (b1, b2, b3, ...) from an initial state to a final state using agents(a1, a2,..).
+          % From b1 at the point (2,2), b2 on the table at point (1,1) to b2,b1 stacked at point (3,3).
+          test1 :- go(
+          [available(a1), available(a2), available(a3), ontable(b1, 2, 2), ontable(b2, 1, 1), clear(b1), clear(b2)],
+          [available(a1), available(a2), available(a3), ontable(b2,3,3), on(b1, b2, 3, 3), clear(b1)]
+          ).
+          % From b2,b1 stacked to b1, b2 on the table.
+          test2 :- go(
+          [available(a1), available(a2), available(a3), ontable(b2,1,1), on(b1, b2, 1, 1), clear(b1)],
+          [available(a1), available(a2), available(a3), ontable(b1,2,2), ontable(b2, 3, 3), clear(b1), clear(b2)]
+          ).
+          % From b2,b1 stacked and b3 on the table to b1,b2,b3 stacked.
+          test3 :- go(
+          [available(a1), available(a2), available(a3), ontable(b2,1,1), on(b1, b2, 1, 1), clear(b1), ontable(b3, 2, 2), clear(b3)],
+          [available(a1), available(a2), available(a3), ontable(b1,3,3), on(b2, b1, 3, 3), on(b3, b2, 3, 3), clear(b3)]
+          ).
+          
+          Can you generate a prolog code containing a new test case, namely testCase, in which we use 3 agents to move the boxes
+          b1, b2, b3, b4 on the table, which are at (1,1),(2,2),(3,3), and (4,4), respectively, to a final stack [b1,b2,b3,b4] at
+          point (6,6), which is ordered from top to bottom?
+
+    
+      A: 
+        role: 'assistant'
+        content: |
+          Sure , here is the Prolog code: 
+          ```prolog
+          % From b1 at (1,1), b2 at (2,2), b3 at (3,3), and b4 at (4,4) to b1,b2,b3, b4 stacked at (6,6).
+          testCase :- go(
+          [available(a1), available(a2), available(a3), ontable(b1,1,1), clear(b1), ontable(b2,2,2), clear(b2), ontable(b3,3,3), clear(b3),ontable(b4,4,4), clear(b4)],
+          [available(a1), available(a2), available(a3), ontable(b4,6,6), on(b4, b3, 6, 6), on(b3, b2, 6, 6), on(b2, b1, 6, 6), clear(b1)]
+          ).
+          ```
+
+    ############################################################################
+    ###############################     16     ##################################
+    ############################################################################
+    16:
+      Q: 
+        role: 'user'
+        content: |
+          Can you generate a prolog code containing a new test case, namely test_case, in which we use a service robot to make a tea in the kitchen, where there is a service robot, a teabag, an empty kettle, and an empty cup in the kitchen?
+      A: 
+        role: 'assistant'
+        content: |
+          Sure , here is the Prolog code: 
+          ```prolog
+          testCase(Actions, Times) :- go(
+          [available(robot), at(robot, kitchen), at(teabag, kitchen), at(kettle, kitchen), at(cup, kitchen), empty(kettle), empty(cup), tea(notready)],
+          [at(robot, kitchen), available(robot), at(cup, kitchen), at(kettle, kitchen), full(cup), tea(ready)]
+          ).
+          ```
+
+    ############################################################################
+    ###############################     17     ##################################
+    ############################################################################
+    17:
+      Q: 
+        role: 'user'
+        content: |
+          % The robot starts to hold an object
+          action(hold_start(Object),
+              [available(robot), at(robot, Place), at(Object, Place)], 
+              [holding(_)], 
+              [], 
+              [],
+              [del(available(robot)), del(at(Object, Place)), add(holding(Object))]).
+
+
+          % The robot stops to hold an object
+          action(hold_end(Object), 
+              [holding(Object)], 
+              [], 
+              [], 
+              [],
+              [del(holding(Object)), add(available(robot)), add(at(Object, kitchen))]).
+
+
+          % The robot starts to put water in a kettle
+          action(fill_kettle_start, 
+              [at(robot, kitchen), holding(kettle), empty(kettle)], 
+              [full(kettle)], 
+              [], 
+              [],
+              [del(empty(kettle))]).
+
+
+          % The robot stops to put water in a kettle
+          action(fill_kettle_end, 
+              [at(robot, kitchen), holding(kettle)], 
+              [empty(kettle)], 
+              [], 
+              [],
+              [add(full(kettle)), add(cold(water))]).
+
+
+          % The robot starts to boil water in kettle and the water is not cold anymore
+          action(boil_water_start, 
+              [at(robot, kitchen), holding(kettle), full(kettle), cold(water)], 
+              [empty(kettle), boiled(water)], 
+              [],
+              [], 
+              [del(cold(water))]).
+
+
+          % The robot stops to boil water in kettle 
+          action(boil_water_end,
+              [at(robot, kitchen), holding(kettle), full(kettle)],
+              [cold(water)],
+              [],
+              [],
+              [add(boiled(water))]).
+
+
+          % The robot starts to put water in a cup from a kettle
+          action(pour_water_start,
+              [at(robot, kitchen), holding(kettle), full(kettle), boiled(water), empty(cup), at(cup, kitchen)], 
+              [empty(kettle), full(cup)],
+              [],
+              [],
+              [del(empty(cup)), del(full(kettle))]).
+
+
+          % The robot stops to put water in a cup from a kettle
+          action(pour_water_end,
+              [at(robot, kitchen), holding(kettle), boiled(water), at(cup, kitchen)],
+              [],
+              [],
+              [],
+              [add(full(cup))]).
+
+
+          % The robot puts a teabag in a cup
+          action(add_teabag, 
+              [at(robot, kitchen), holding(teabag), at(cup, kitchen), boiled(water), full(cup), tea(notready)], 
+              [], 
+              [], 
+              [],
+              [del(tea(notready)), add(tea(ready)), add(available(robot)), del(holding(teabag)), del(boiled(water))]).
+                          
+          Can you generate a list of predicates used in above prolog code?
+
+    
+      A: 
+        role: 'assistant'
+        content: |
+          Sure , here is the list of predicates in Prolog code format: 
+          ```prolog
+          %  /# of parameters for given predicate
+          :- dynamic at/2.
+          :- dynamic empty/1.
+          :- dynamic full/1.
+          :- dynamic boiled/1.
+          :- dynamic holding/1.
+          :- dynamic available/1.
+          :- dynamic tea/1.
+          :- discontiguous action/6.
+          ```
+          The 'at' predicate possesses 2 literals.
+          The 'empty' predicate possesses 1 literal.
+          The 'full' predicate possesses 1 literal.
+          The 'boiled' predicate possesses 1 literal.
+          The 'holding' predicate possesses 1 literal.
+          The 'available' predicate possesses 1 literal.
+          The 'tea' predicate possesses 1 literal.
+          The 'action' possesses 6 literals: actionName, ValidConditions, InvalidConditions, ValidConditionsAtEnd, ConditionOnKB, Effects.
+
+
