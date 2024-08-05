@@ -30,9 +30,6 @@
 - [Running](#running)
   - [PROLOG ONLY](#prolog-only-2)
   - [PROLOG + ROS SIMULATION](#prolog--ros-simulation-2)
-- [Known issues and future works](#known-issues-and-future-works)
-  - [Issues](#issues)
-  - [Future works](#future-works)
 - [Thanks to](#thanks-to)
 
 
@@ -154,16 +151,6 @@ To enable the two nodes (motion and prolog planner) run these two commands in tw
 python3 -i ~/ros_ws/src/prolog_project/prolog_project/scripts/motion_node.py
 python3 -i ~/ros_ws/src/prolog_project/prolog_project/scripts/prolog_node.py
 ```
-
-
-## Known issues and future works
-
-### Issues
-- [x] The blocks do not stack in simulation (they jitter) -> **Solved**
-
-### Future works
-- Get the blocks info with machine learning methods (e.g. neuro problog)
-- Optimize the makespan selecting the blocks that are faster to build 
 
 ## Thanks to
 - Luigi Palopoli (Thesis Supervisor): luigi.palopoli@unitn.it
